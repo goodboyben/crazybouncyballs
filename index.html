@@ -306,27 +306,40 @@
 	const getBallAnimationStatus = (ball) => ball.isLemon ? false : (ball.animationsEnabled ?? animationsEnabled);
 
 	function playBounceSound(ball, volume = 1) {
-		if (!soundEnabled) return;
-		const now = performance.now();
-		if (now - ball.lastSoundTime < 75) return;
-		ball.lastSoundTime = now;
+    if (!soundEnabled) return;
+    const now = performance.now();
+    if (now - ball.lastSoundTime < 75) return;
+    ball.lastSoundTime = now;
 
-		if (ball.isLemon && useLemonSounds) {
-			if (!lemonBounceSoundReady) return;
-			const channel = lemonBounceChannels[lemonBounceChannelIndex];
-			channel.volume = Math.max(0, Math.min(1, volume));
-			channel.currentTime = 0;
-			channel.play().catch(e => {});
-			lemonBounceChannelIndex = (lemonBounceChannelIndex + 1) % BOUNCE_CHANNEL_COUNT;
-		} else {
-			if (!bounceSoundReady) return;
-			const channel = bounceChannels[bounceChannelIndex];
-			channel.volume = Math.max(0, Math.min(1, volume));
-			channel.currentTime = 0;
-			channel.play().catch(e => {});
-			bounceChannelIndex = (bounceChannelIndex + 1) % BOUNCE_CHANNEL_COUNT;
-		}
-	}
+    if (ball.isLemon && useLemonSounds) {
+        if (!lemonBounceSoundReady) return;
+        // Get a template audio element from the pool
+        const channel = lemonBounceChannels[lemonBounceChannelIndex];
+        
+        // --- EDITED SECTION ---
+        // Clone the template element. This creates a fresh instance ready to play from the start.
+        const audioToPlay = channel.cloneNode(); 
+        audioToPlay.volume = Math.max(0, Math.min(1, volume));
+        // We play the clone, not the original template. No need for currentTime = 0.
+        audioToPlay.play().catch(e => {});
+        // --- END EDIT ---
+        
+        lemonBounceChannelIndex = (lemonBounceChannelIndex + 1) % BOUNCE_CHANNEL_COUNT;
+    } else {
+        if (!bounceSoundReady) return;
+        // Get a template audio element from the pool
+        const channel = bounceChannels[bounceChannelIndex];
+        
+        // --- EDITED SECTION ---
+        // Clone the template element.
+        const audioToPlay = channel.cloneNode();
+        audioToPlay.volume = Math.max(0, Math.min(1, volume));
+        audioToPlay.play().catch(e => {});
+        // --- END EDIT ---
+
+        bounceChannelIndex = (bounceChannelIndex + 1) % BOUNCE_CHANNEL_COUNT;
+    }
+}
 
 	function playExplodeSound() {
 		if (!soundEnabled || !explodeSoundReady) return;
