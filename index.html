@@ -269,18 +269,16 @@
 	let activeEditorTab = 'global-settings';
 	let lastActiveMenuId = 'side-box';
 	
+	// --- UPDATED AUDIO STATE ---
 	let soundEnabled = true;
 	let useLemonSounds = true;
-	let bounceSoundReady = false;
-	let explodeSoundReady = false;
-	let lemonBounceSoundReady = false;
-	const BOUNCE_CHANNEL_COUNT = 8;
-	const bounceChannels = [];
-	const lemonBounceChannels = [];
-	let bounceChannelIndex = 0;
-	let lemonBounceChannelIndex = 0;
 	let audioContext = null;
 	let soundsUnlocked = false;
+
+	// Buffers to hold the decoded sound data
+	let bounceBuffer = null;
+	let lemonBounceBuffer = null;
+	let explodeBuffer = null;
 
 	const MAX_SQUISH_VELOCITY = 10; 
 	const MAX_SQUISH_RATIO = 1.19;
@@ -305,47 +303,60 @@
 	const getBallTrailsStatus = (ball) => ball.isLemon ? false : (ball.trailsEnabled ?? trailsEnabled);
 	const getBallAnimationStatus = (ball) => ball.isLemon ? false : (ball.animationsEnabled ?? animationsEnabled);
 
+	// --- UPDATED AUDIO FUNCTIONS ---
 	function playBounceSound(ball, volume = 1) {
-    if (!soundEnabled) return;
-    const now = performance.now();
-    if (now - ball.lastSoundTime < 75) return;
-    ball.lastSoundTime = now;
+		if (!soundEnabled || !audioContext) return;
+		const now = performance.now();
+		if (now - ball.lastSoundTime < 75) return;
+		ball.lastSoundTime = now;
 
-    if (ball.isLemon && useLemonSounds) {
-        if (!lemonBounceSoundReady) return;
-        // Get a template audio element from the pool
-        const channel = lemonBounceChannels[lemonBounceChannelIndex];
-        
-        // --- EDITED SECTION ---
-        // Clone the template element. This creates a fresh instance ready to play from the start.
-        const audioToPlay = channel.cloneNode(); 
-        audioToPlay.volume = Math.max(0, Math.min(1, volume));
-        // We play the clone, not the original template. No need for currentTime = 0.
-        audioToPlay.play().catch(e => {});
-        // --- END EDIT ---
-        
-        lemonBounceChannelIndex = (lemonBounceChannelIndex + 1) % BOUNCE_CHANNEL_COUNT;
-    } else {
-        if (!bounceSoundReady) return;
-        // Get a template audio element from the pool
-        const channel = bounceChannels[bounceChannelIndex];
-        
-        // --- EDITED SECTION ---
-        // Clone the template element.
-        const audioToPlay = channel.cloneNode();
-        audioToPlay.volume = Math.max(0, Math.min(1, volume));
-        audioToPlay.play().catch(e => {});
-        // --- END EDIT ---
+		// Determine which audio buffer to use
+		const bufferToPlay = (ball.isLemon && useLemonSounds && lemonBounceBuffer) ? lemonBounceBuffer : bounceBuffer;
 
-        bounceChannelIndex = (bounceChannelIndex + 1) % BOUNCE_CHANNEL_COUNT;
-    }
-}
+		if (!bufferToPlay) return; // Sound hasn't loaded yet
+
+		// Create a source node from the buffer
+		const source = audioContext.createBufferSource();
+		source.buffer = bufferToPlay;
+
+		// Create a gain node for volume control
+		const gainNode = audioContext.createGain();
+		gainNode.gain.setValueAtTime(Math.max(0, Math.min(1, volume)), audioContext.currentTime);
+
+		// Connect the nodes: source -> gain -> speakers
+		source.connect(gainNode);
+		gainNode.connect(audioContext.destination);
+
+		// Play the sound now
+		source.start(0);
+	}
 
 	function playExplodeSound() {
-		if (!soundEnabled || !explodeSoundReady) return;
-		const audio = new Audio('explode.mp3');
-		audio.volume = 1.0;
-		audio.play();
+		if (!soundEnabled || !explodeBuffer || !audioContext) return;
+		
+		const source = audioContext.createBufferSource();
+		source.buffer = explodeBuffer;
+
+		const gainNode = audioContext.createGain();
+		gainNode.gain.setValueAtTime(1.0, audioContext.currentTime); // Full volume
+
+		source.connect(gainNode);
+		gainNode.connect(audioContext.destination);
+		source.start(0);
+	}
+
+	async function loadAudioData(url) {
+		// Helper function to fetch and decode audio
+		if (!audioContext) return null;
+		try {
+			const response = await fetch(url);
+			const arrayBuffer = await response.arrayBuffer();
+			const decodedBuffer = await audioContext.decodeAudioData(arrayBuffer);
+			return decodedBuffer;
+		} catch (error) {
+			console.error(`Failed to load audio from ${url}`, error);
+			return null;
+		}
 	}
 
 	function initAudioContext() {
@@ -353,32 +364,32 @@
 		soundsUnlocked = true;
 
 		const AudioContext = window.AudioContext || window.webkitAudioContext;
-		if (!AudioContext) return;
-		audioContext = new AudioContext();
+		if (!AudioContext) {
+			console.error("Web Audio API is not supported in this browser.");
+			return;
+		}
+		
+		if (!audioContext) {
+			audioContext = new AudioContext();
+		}
+		
+		// Resume context if it's suspended
 		if (audioContext.state === 'suspended') {
-			audioContext.resume().catch(e => console.error("Audio context resume failed:", e));
+			audioContext.resume();
 		}
-
-		const buffer = audioContext.createBuffer(1, 1, 22050);
-		const source = audioContext.createBufferSource();
-		source.buffer = buffer;
-		source.connect(audioContext.destination);
-		source.start(0);
-
-		const noiseBufferSize = audioContext.sampleRate * 2;
-		const noiseBuffer = audioContext.createBuffer(1, noiseBufferSize, audioContext.sampleRate);
-		const output = noiseBuffer.getChannelData(0);
-		for (let i = 0; i < noiseBufferSize; i++) {
-			output[i] = Math.random() * 2 - 1;
+		
+		// Start loading audio data only after context is live
+		if (!bounceBuffer) { // Load only once
+			loadAudioData('bounce.mp3').then(buffer => { 
+				if(buffer) bounceBuffer = buffer; 
+			});
+			loadAudioData('lemon_bounce.mp3').then(buffer => { 
+				if(buffer) lemonBounceBuffer = buffer; 
+			});
+			loadAudioData('explode.mp3').then(buffer => { 
+				if(buffer) explodeBuffer = buffer;
+			});
 		}
-		const noiseSource = audioContext.createBufferSource();
-		noiseSource.buffer = noiseBuffer;
-		noiseSource.loop = true;
-		const gainNode = audioContext.createGain();
-		gainNode.gain.setValueAtTime(0.001, audioContext.currentTime);
-		noiseSource.connect(gainNode);
-		gainNode.connect(audioContext.destination);
-		noiseSource.start();
 	}
 
 	function closeEditor() {
@@ -801,23 +812,7 @@
 			document.documentElement.style.setProperty('--vh', `${vh}px`);
 		});
 
-		const audioCheckBounce = new Audio('bounce.mp3');
-		audioCheckBounce.oncanplaythrough = () => {
-			bounceSoundReady = true;
-			for (let i = 0; i < BOUNCE_CHANNEL_COUNT; i++) bounceChannels.push(new Audio('bounce.mp3'));
-		};
-		audioCheckBounce.onerror = () => { bounceSoundReady = false; };
-		
-		const audioCheckLemon = new Audio('lemon_bounce.mp3');
-		audioCheckLemon.oncanplaythrough = () => {
-			lemonBounceSoundReady = true;
-			for (let i = 0; i < BOUNCE_CHANNEL_COUNT; i++) lemonBounceChannels.push(new Audio('lemon_bounce.mp3'));
-		};
-		audioCheckLemon.onerror = () => { lemonBounceSoundReady = false; };
-
-		const audioCheckExplode = new Audio('explode.mp3');
-		audioCheckExplode.oncanplaythrough = () => { explodeSoundReady = true; };
-		audioCheckExplode.onerror = () => { explodeSoundReady = false; };
+		// --- REMOVED OLD AUDIO LOADING CODE ---
 
 		const setupSlider=(key,isSingle)=>{const suffix=isSingle?"-s":"",slider=document.getElementById(key+suffix),numInput=document.getElementById(`${key}-input${suffix}`),display=document.getElementById(`${key}-num${suffix}`),zeroBtn=slider.parentElement.querySelector(".zero-btn"),resetBtn=slider.parentElement.querySelector(".reset-btn");function updateValue(value){const min=parseFloat(slider.min),max=parseFloat(slider.max),clampedValue=Math.max(min,Math.min(max,value));slider.value=clampedValue,numInput&&(numInput.value=clampedValue),display&&(display.textContent=clampedValue.toFixed("tamanho"===key?0:2)),isSingle?selectedBall&&(selectedBall[key]=clampedValue):settings[key]=clampedValue}slider.addEventListener("input",()=>updateValue(parseFloat(slider.value))),numInput&&numInput.addEventListener("change",()=>updateValue(parseFloat(numInput.value))),zeroBtn&&zeroBtn.addEventListener("click",()=>updateValue(0)),resetBtn&&resetBtn.addEventListener("click",()=>{isSingle?selectedBall&&(selectedBall[key]=null,updateValue(settings[key])):updateValue(defaultSettings[key])})};const sliderKeys=["tamanho","gravidade","vento","elasticidade","restitution"];sliderKeys.forEach(key=>setupSlider(key,!1)),sliderKeys.forEach(key=>setupSlider(key,!0)),document.getElementById("sound-toggle").addEventListener("change",e=>soundEnabled=e.target.checked),document.getElementById("lemon-sound-toggle").addEventListener("change",e=>useLemonSounds=e.target.checked),document.querySelector('.sounds-toggle').addEventListener('click', e => e.currentTarget.parentElement.classList.toggle('open')),document.getElementById("ultra-graphics-toggle").addEventListener("change",e=>ultraGraphicsEnabled=e.target.checked),document.getElementById("trails-toggle").addEventListener("change",e=>{trailsEnabled=e.target.checked;bolas.forEach(b=>b.trailsEnabled=null)}),document.getElementById("color-toggle").addEventListener("change",e=>{changeColorOnBounce=e.target.checked,bolas.forEach(b=>b.changeColorOnBounceEnabled=changeColorOnBounce),changeColorOnBounce&&(allRainbows=!1,bolas.forEach(b=>b.isRainbow=!1),syncUIToSettings())}),document.getElementById("rainbows-toggle").addEventListener("change",e=>{allRainbows=e.target.checked;const colorToggle=document.getElementById("color-toggle");colorToggle.disabled=allRainbows,bolas.forEach(b=>{if(b.isLemon)return;b.isRainbow=allRainbows}),allRainbows&&(changeColorOnBounce=!1,colorToggle.checked=!1,bolas.forEach(b=>{if(b.isLemon)return;b.changeColorOnBounceEnabled=!1}),syncUIToSettings())});const animationToggle=document.getElementById("animation-toggle"),squishyToggle=document.getElementById("squishy-toggle");animationToggle.addEventListener("change",e=>{animationsEnabled=e.target.checked,squishyToggle.disabled=!animationsEnabled}),squishyToggle.addEventListener("change",e=>extraSquishy=e.target.checked),document.getElementById("add-btn").addEventListener("click",createBall),document.getElementById("clear-btn").addEventListener("click",()=>{confirm("Are you sure you want to clear all balls?")&&(bolas=[],particles=[],selectedBall=null,world.innerHTML="",deletedBolasStack=[],updateUndoButtonVisibility(),updateEditorUI())}),document.getElementById("undo-btn").addEventListener("click",()=>{deletedBolasStack.length>0&&(ballToRestore=deletedBolasStack.pop(),bolas.push(ballToRestore),world.appendChild(ballToRestore.elm),updateUndoButtonVisibility())}),document.getElementById("editor-btn").addEventListener("click",()=>{document.getElementById("side-box").classList.add("hidden"),document.getElementById("editor-box").classList.remove("hidden"),document.body.classList.add("editor-active"),lastActiveMenuId="editor-box",updateUndoButtonVisibility(),updateEditorUI()}),document.getElementById("done-btn").addEventListener("click",closeEditor),document.getElementById("reset-btn").addEventListener("click",()=>{settings={...defaultSettings},trailsEnabled=!1,changeColorOnBounce=!0,animationsEnabled=!0,extraSquishy=!1,allRainbows=!1,ultraGraphicsEnabled=!1,bolas.forEach(b=>{b.isRainbow=!1,b.isLemon=!1,b.animationsEnabled=!0,b.trailsEnabled=null,b.changeColorOnBounceEnabled=!0,b.innerElm.style.backgroundColor=getRandomColor(),sliderKeys.forEach(key=>b[key]=null),b.ultraGraphicsEnabled=null}),syncUIToSettings()}),document.getElementById("delete-btn").addEventListener("click",()=>{selectedBall&&bolas.indexOf(selectedBall)>-1&&(world.removeChild(selectedBall.elm),selectedBall.highlightElm&&world.removeChild(selectedBall.highlightElm),bolas.splice(bolas.indexOf(selectedBall),1),deletedBolasStack.push(selectedBall),selectedBall=null,updateEditorUI(),updateUndoButtonVisibility())});const isTouchDevice=window.matchMedia("(pointer: coarse)").matches,menuToggleHint=document.getElementById("menu-toggle-hint"),showMenuHint=document.getElementById("show-menu-hint");isTouchDevice?(document.body.addEventListener("touchstart",e=>{initAudioContext(),("world"===e.target.id&&2===e.touches.length)&&(e.preventDefault(),toggleMenu())}),showMenuHint.textContent="Two-finger tap to show menu",menuToggleHint.textContent="Two-finger tap the background to hide/show."):(clickCount=0,lastClickTime=0,document.body.addEventListener("click",e=>{if(initAudioContext(),"world"!==e.target.id)return;const currentTime=(new Date).getTime();currentTime-lastClickTime>400?clickCount=1:clickCount++,lastClickTime=currentTime,3===clickCount&&(toggleMenu(),clickCount=0)}),showMenuHint.textContent="Triple-click to show menu",menuToggleHint.textContent="Triple-click the background to hide/show this menu."),document.getElementById("randomize-colors-btn").addEventListener("click",()=>{bolas.forEach(b=>{if(b.isLemon)return;applyColorToBall(getRandomColor(),b)})}),document.getElementById("randomize-color-btn-single").addEventListener("click",()=>{selectedBall&&applyColorToBall(getRandomColor(),selectedBall)}),document.getElementById("lemons-btn-global").addEventListener("click",()=>{bolas.forEach(b=>{b.isLemon=!0,b.innerElm.style.backgroundColor="#FFFF00",b.isRainbow=!1})}),document.getElementById("lemon-btn-single").addEventListener("click",()=>{selectedBall&&(selectedBall.isLemon=!0,selectedBall.innerElm.style.backgroundColor="#FFFF00",selectedBall.isRainbow=!1,updateEditorUI())}),document.documentElement.addEventListener("mouseup",mouseUp),document.documentElement.addEventListener("touchend",mouseUp),document.documentElement.addEventListener("mousemove",mouseMove),document.documentElement.addEventListener("touchmove",mouseMove),syncUIToSettings(),setupEditor();for(let i=0;i<3;i++)createBall();gameLoop()
 	}
