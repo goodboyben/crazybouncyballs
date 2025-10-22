@@ -181,9 +181,12 @@
 	<div id="show-menu-hint"></div>
 
 	<div id="side-box" class="menu-box">
-		<button id="add-btn">Add Ball</button>
-		<button id="editor-btn">Ball Editor</button>
-		<button id="clear-btn">Clear</button>
+    <button id="add-btn">Add Ball</button>
+   <p style="font-size: 10px; opacity: 0.5; margin: 2px 0 0px; text-align: center;">
+  (Shortcut: A)</p>
+
+    <button id="editor-btn">Ball Editor</button>
+    <button id="clear-btn">Clear</button>
 		<div id="sounds-menu" class="sounds-menu">
 			<button class="sounds-toggle">Sounds</button>
 			<div class="sounds-content">
@@ -810,6 +813,14 @@
 	}
 	
 	init();
+	
+	 // --- KEYBOARD SHORTCUTS ---
+    document.addEventListener("keydown", (e) => {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+      if (e.key.toLowerCase() === "a") {
+        createBall();
+      }
+    });
 </script>
 </body>
 </html>
