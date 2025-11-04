@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -115,6 +114,28 @@ button:hover { background-color: #45a049; }
 .warning-btn { background-color: #FFEB3B; color: black; font-weight: bold; }
 .warning-btn:hover { background-color: #FBC02D; }
 
+/* --- Fullscreen Button --- */
+#fullscreen-btn {
+position: absolute;
+top: 10px;
+left: 10px;
+width: 36px;
+height: 36px;
+padding: 6px;
+margin: 0;
+background-color: rgba(255, 255, 255, 0.1);
+border: 1px solid rgba(255, 255, 255, 0.3);
+border-radius: 50%;
+}
+#fullscreen-btn:hover {
+background-color: rgba(255, 255, 255, 0.3);
+}
+#fullscreen-btn svg {
+width: 100%;
+height: 100%;
+color: white;
+}
+
 /* --- Editor Specific Styles --- */
 #done-btn { position: absolute; top: 10px; left: 10px; width: auto; padding: 5px 10px; font-size: 14px; margin: 0; }
 .editor-tabs { display: flex; margin-bottom: 15px; flex-shrink: 0; }
@@ -182,6 +203,10 @@ padding: 0 10px;
 <div id="show-menu-hint"></div>
 
 <div id="side-box" class="menu-box">
+    <button id="fullscreen-btn" title="Toggle Fullscreen">
+        <svg id="fullscreen-enter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+        <svg id="fullscreen-exit-icon" style="display:none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path></svg>
+    </button>
     <button id="add-btn">Add Ball</button>
    <p style="font-size: 10px; opacity: 0.5; margin: 2px 0 0px; text-align: center;">
   (Shortcut: A)</p>
@@ -778,7 +803,74 @@ draggedBall.moved = true;
 }
 
 function setupEditor() {
-const t=document.getElementById("color-grid-selected"),e=document.getElementById("color-grid-global");[t,e].forEach(l=>l.innerHTML=""),PALETTE_COLORS.forEach(l=>{const a=document.createElement("div");a.className="color-swatch",a.style.backgroundColor=l,a.addEventListener("click",()=>{selectedBall&&applyColorToBall(l,selectedBall)}),t.appendChild(a);const c=document.createElement("div");c.className="color-swatch",c.style.backgroundColor=l,c.addEventListener("click",()=>{bolas.forEach(t=>applyColorToBall(l,t)),allRainbows=!1,changeColorOnBounce=!1,document.getElementById("color-toggle").disabled=!1,syncUIToSettings()}),e.appendChild(c)}),document.getElementById("hex-input-selected").addEventListener("change",t=>{selectedBall&&/^#([0-9A-F]{3}){1,2}$/i.test(t.target.value)&&applyColorToBall(t.target.value,selectedBall)}),document.getElementById("hex-input-global").addEventListener("change",t=>{/^#([0-9A-F]{3}){1,2}$/i.test(t.target.value)&&(bolas.forEach(e=>applyColorToBall(t.target.value,e)),allRainbows=!1,changeColorOnBounce=!1,document.getElementById("color-toggle").disabled=!1,syncUIToSettings())}),document.getElementById('ball-ultra-graphics-toggle').addEventListener('change',t=>{selectedBall&&(selectedBall.ultraGraphicsEnabled=t.target.checked)}),document.getElementById("rainbow-toggle").addEventListener("change",t=>{selectedBall&&(selectedBall.isRainbow=t.target.checked,updateEditorUI())}),document.getElementById("ball-color-bounce-toggle").addEventListener("change",t=>{selectedBall&&(selectedBall.changeColorOnBounceEnabled=t.target.checked)}),document.getElementById("ball-animation-toggle").addEventListener("change",t=>{selectedBall&&(selectedBall.animationsEnabled=t.target.checked)}),document.getElementById("ball-trail-toggle").addEventListener("change",t=>{selectedBall&&(selectedBall.trailsEnabled=t.target.checked)}),document.getElementById("edit-single-tab").addEventListener("click",()=>{activeEditorTab="edit-single",document.getElementById("edit-single-tab").classList.add("active"),document.getElementById("global-settings-tab").classList.remove("active"),document.getElementById("single-ball-editor").classList.add("active"),document.getElementById("global-settings-editor").classList.remove("active"),lastActiveMenuId="editor-box",updateUndoButtonVisibility()}),document.getElementById("global-settings-tab").addEventListener("click",()=>{activeEditorTab="global-settings",selectedBall&&selectedBall.highlightElm&&(world.removeChild(selectedBall.highlightElm),selectedBall.highlightElm=null,selectedBall=null),document.getElementById("edit-single-tab").classList.remove("active"),document.getElementById("global-settings-tab").classList.add("active"),document.getElementById("single-ball-editor").classList.remove("active"),document.getElementById("global-settings-editor").classList.add("active"),lastActiveMenuId="side-box"})}
+    const colorGridSelected = document.getElementById("color-grid-selected");
+    const colorGridGlobal = document.getElementById("color-grid-global");
+    [colorGridSelected, colorGridGlobal].forEach(grid => grid.innerHTML = "");
+
+    PALETTE_COLORS.forEach(color => {
+        const swatchSelected = document.createElement("div");
+        swatchSelected.className = "color-swatch";
+        swatchSelected.style.backgroundColor = color;
+        swatchSelected.addEventListener("click", () => {
+            if (selectedBall) applyColorToBall(color, selectedBall);
+        });
+        colorGridSelected.appendChild(swatchSelected);
+
+        const swatchGlobal = document.createElement("div");
+        swatchGlobal.className = "color-swatch";
+        swatchGlobal.style.backgroundColor = color;
+        swatchGlobal.addEventListener("click", () => {
+            bolas.forEach(ball => applyColorToBall(color, ball));
+            allRainbows = false;
+            changeColorOnBounce = false;
+            document.getElementById("color-toggle").disabled = false;
+            syncUIToSettings();
+        });
+        colorGridGlobal.appendChild(swatchGlobal);
+    });
+
+    // --- BUG FIX: Handle custom color input ---
+    const hexInputSelected = document.getElementById("hex-input-selected");
+    const applySelectedColorFromInput = (value) => {
+        if (selectedBall && /^#([0-9A-F]{3}){1,2}$/i.test(value)) {
+            applyColorToBall(value, selectedBall);
+        }
+    };
+    hexInputSelected.addEventListener("change", (e) => applySelectedColorFromInput(e.target.value));
+    hexInputSelected.addEventListener("keydown", (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            applySelectedColorFromInput(e.target.value);
+        }
+    });
+
+    const hexInputGlobal = document.getElementById("hex-input-global");
+    const applyGlobalColorFromInput = (value) => {
+        if (/^#([0-9A-F]{3}){1,2}$/i.test(value)) {
+            bolas.forEach(ball => applyColorToBall(value, ball));
+            allRainbows = false;
+            changeColorOnBounce = false;
+            document.getElementById("color-toggle").disabled = false;
+            syncUIToSettings();
+        }
+    };
+    hexInputGlobal.addEventListener("change", (e) => applyGlobalColorFromInput(e.target.value));
+    hexInputGlobal.addEventListener("keydown", (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            applyGlobalColorFromInput(e.target.value);
+        }
+    });
+    // --- END BUG FIX ---
+
+    document.getElementById('ball-ultra-graphics-toggle').addEventListener('change', t => { if (selectedBall) selectedBall.ultraGraphicsEnabled = t.target.checked });
+    document.getElementById("rainbow-toggle").addEventListener("change", t => { if (selectedBall) { selectedBall.isRainbow = t.target.checked; updateEditorUI(); } });
+    document.getElementById("ball-color-bounce-toggle").addEventListener("change", t => { if (selectedBall) selectedBall.changeColorOnBounceEnabled = t.target.checked });
+    document.getElementById("ball-animation-toggle").addEventListener("change", t => { if (selectedBall) selectedBall.animationsEnabled = t.target.checked });
+    document.getElementById("ball-trail-toggle").addEventListener("change", t => { if (selectedBall) selectedBall.trailsEnabled = t.target.checked });
+    document.getElementById("edit-single-tab").addEventListener("click", () => { activeEditorTab = "edit-single"; document.getElementById("edit-single-tab").classList.add("active"); document.getElementById("global-settings-tab").classList.remove("active"); document.getElementById("single-ball-editor").classList.add("active"); document.getElementById("global-settings-editor").classList.remove("active"); lastActiveMenuId = "editor-box"; updateUndoButtonVisibility() });
+    document.getElementById("global-settings-tab").addEventListener("click", () => { activeEditorTab = "global-settings"; if (selectedBall && selectedBall.highlightElm) { world.removeChild(selectedBall.highlightElm); selectedBall.highlightElm = null; selectedBall = null; } document.getElementById("edit-single-tab").classList.remove("active"); document.getElementById("global-settings-tab").classList.add("active"); document.getElementById("single-ball-editor").classList.remove("active"); document.getElementById("global-settings-editor").classList.add("active"); lastActiveMenuId = "side-box" });
+}
 
 function syncUIToSettings() {
 const e={tamanho:"tamanho-num",gravidade:"gravidade-num",vento:"vento-num",elasticidade:"elasticidade-num",restitution:"restitution-num"};Object.keys(e).forEach(t=>{const l=document.getElementById(t),a=document.getElementById(`${t}-input`),c=document.getElementById(e[t]);l.value=settings[t],a&&(a.value=settings[t]),c.textContent=settings[t].toFixed("tamanho"===t?0:2)}),document.getElementById("ultra-graphics-toggle").checked=ultraGraphicsEnabled,document.getElementById("trails-toggle").checked=trailsEnabled,document.getElementById("color-toggle").checked=changeColorOnBounce,document.getElementById("animation-toggle").checked=animationsEnabled,document.getElementById("squishy-toggle").checked=extraSquishy,document.getElementById("rainbows-toggle").checked=allRainbows
@@ -809,6 +901,35 @@ audioCheckLemon.onerror = () => { lemonBounceSoundReady = false; };
 const audioCheckExplode = new Audio('explode.mp3');
 audioCheckExplode.oncanplaythrough = () => { explodeSoundReady = true; };
 audioCheckExplode.onerror = () => { explodeSoundReady = false; };
+
+// --- Fullscreen Button Logic ---
+const fullscreenBtn = document.getElementById('fullscreen-btn');
+const fsEnterIcon = document.getElementById('fullscreen-enter-icon');
+const fsExitIcon = document.getElementById('fullscreen-exit-icon');
+
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+            alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+        });
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    }
+}
+function updateFullscreenIcon() {
+    if (document.fullscreenElement) {
+        fsEnterIcon.style.display = 'none';
+        fsExitIcon.style.display = 'block';
+    } else {
+        fsEnterIcon.style.display = 'block';
+        fsExitIcon.style.display = 'none';
+    }
+}
+fullscreenBtn.addEventListener('click', toggleFullscreen);
+document.addEventListener('fullscreenchange', updateFullscreenIcon);
+// --- End Fullscreen Logic ---
 
 const setupSlider=(key,isSingle)=>{const suffix=isSingle?"-s":"",slider=document.getElementById(key+suffix),numInput=document.getElementById(`${key}-input${suffix}`),display=document.getElementById(`${key}-num${suffix}`),zeroBtn=slider.parentElement.querySelector(".zero-btn"),resetBtn=slider.parentElement.querySelector(".reset-btn");function updateValue(value){const min=parseFloat(slider.min),max=parseFloat(slider.max),clampedValue=Math.max(min,Math.min(max,value));slider.value=clampedValue,numInput&&(numInput.value=clampedValue),display&&(display.textContent=clampedValue.toFixed("tamanho"===key?0:2)),isSingle?selectedBall&&(selectedBall[key]=clampedValue):settings[key]=clampedValue}slider.addEventListener("input",()=>updateValue(parseFloat(slider.value))),numInput&&numInput.addEventListener("change",()=>updateValue(parseFloat(numInput.value))),zeroBtn&&zeroBtn.addEventListener("click",()=>updateValue(0)),resetBtn&&resetBtn.addEventListener("click",()=>{isSingle?selectedBall&&(selectedBall[key]=null,updateValue(settings[key])):updateValue(defaultSettings[key])})};const sliderKeys=["tamanho","gravidade","vento","elasticidade","restitution"];sliderKeys.forEach(key=>setupSlider(key,!1)),sliderKeys.forEach(key=>setupSlider(key,!0)),document.getElementById("sound-toggle").addEventListener("change",e=>soundEnabled=e.target.checked),document.getElementById("lemon-sound-toggle").addEventListener("change",e=>useLemonSounds=e.target.checked),document.querySelector('.sounds-toggle').addEventListener('click', e => e.currentTarget.parentElement.classList.toggle('open')),document.getElementById("ultra-graphics-toggle").addEventListener("change",e=>ultraGraphicsEnabled=e.target.checked),document.getElementById("trails-toggle").addEventListener("change",e=>{trailsEnabled=e.target.checked;bolas.forEach(b=>b.trailsEnabled=null)}),document.getElementById("color-toggle").addEventListener("change",e=>{changeColorOnBounce=e.target.checked,bolas.forEach(b=>b.changeColorOnBounceEnabled=changeColorOnBounce),changeColorOnBounce&&(allRainbows=!1,bolas.forEach(b=>b.isRainbow=!1),syncUIToSettings())}),document.getElementById("rainbows-toggle").addEventListener("change",e=>{allRainbows=e.target.checked;const colorToggle=document.getElementById("color-toggle");colorToggle.disabled=allRainbows,bolas.forEach(b=>{if(b.isLemon)return;b.isRainbow=allRainbows}),allRainbows&&(changeColorOnBounce=!1,colorToggle.checked=!1,bolas.forEach(b=>{if(b.isLemon)return;b.changeColorOnBounceEnabled=!1}),syncUIToSettings())});const animationToggle=document.getElementById("animation-toggle"),squishyToggle=document.getElementById("squishy-toggle");animationToggle.addEventListener("change",e=>{animationsEnabled=e.target.checked,squishyToggle.disabled=!animationsEnabled}),squishyToggle.addEventListener("change",e=>extraSquishy=e.target.checked),document.getElementById("add-btn").addEventListener("click",createBall),document.getElementById("clear-btn").addEventListener("click",()=>{confirm("Are you sure you want to clear all balls?")&&(bolas=[],particles=[],selectedBall=null,world.innerHTML="",deletedBolasStack=[],updateUndoButtonVisibility(),updateEditorUI())}),document.getElementById("undo-btn").addEventListener("click",()=>{deletedBolasStack.length>0&&(ballToRestore=deletedBolasStack.pop(),bolas.push(ballToRestore),world.appendChild(ballToRestore.elm),updateUndoButtonVisibility())}),document.getElementById("editor-btn").addEventListener("click",()=>{document.getElementById("side-box").classList.add("hidden"),document.getElementById("editor-box").classList.remove("hidden"),document.body.classList.add("editor-active"),lastActiveMenuId="editor-box",updateUndoButtonVisibility(),updateEditorUI()}),document.getElementById("done-btn").addEventListener("click",closeEditor),document.getElementById("reset-btn").addEventListener("click",()=>{settings={...defaultSettings},trailsEnabled=!1,changeColorOnBounce=!0,animationsEnabled=!0,extraSquishy=!1,allRainbows=!1,ultraGraphicsEnabled=!1,bolas.forEach(b=>{b.isRainbow=!1,b.isLemon=!1,b.animationsEnabled=!0,b.trailsEnabled=null,b.changeColorOnBounceEnabled=!0,b.innerElm.style.backgroundColor=getRandomColor(),sliderKeys.forEach(key=>b[key]=null),b.ultraGraphicsEnabled=null}),syncUIToSettings()}),document.getElementById("delete-btn").addEventListener("click",()=>{selectedBall&&bolas.indexOf(selectedBall)>-1&&(world.removeChild(selectedBall.elm),selectedBall.highlightElm&&world.removeChild(selectedBall.highlightElm),bolas.splice(bolas.indexOf(selectedBall),1),deletedBolasStack.push(selectedBall),selectedBall=null,updateEditorUI(),updateUndoButtonVisibility())});const isTouchDevice=window.matchMedia("(pointer: coarse)").matches,menuToggleHint=document.getElementById("menu-toggle-hint"),showMenuHint=document.getElementById("show-menu-hint");isTouchDevice?(document.body.addEventListener("touchstart",e=>{initAudioContext(),("world"===e.target.id&&2===e.touches.length)&&(e.preventDefault(),toggleMenu())}),showMenuHint.textContent="Two-finger tap to show menu",menuToggleHint.textContent="Two-finger tap the background to hide/show."):(clickCount=0,lastClickTime=0,document.body.addEventListener("click",e=>{if(initAudioContext(),"world"!==e.target.id)return;const currentTime=(new Date).getTime();currentTime-lastClickTime>400?clickCount=1:clickCount++,lastClickTime=currentTime,3===clickCount&&(toggleMenu(),clickCount=0)}),showMenuHint.textContent="Triple-click to show menu",menuToggleHint.textContent="Triple-click the background to hide/show this menu."),document.getElementById("randomize-colors-btn").addEventListener("click",()=>{bolas.forEach(b=>{if(b.isLemon)return;applyColorToBall(getRandomColor(),b)})}),document.getElementById("randomize-color-btn-single").addEventListener("click",()=>{selectedBall&&applyColorToBall(getRandomColor(),selectedBall)}),document.getElementById("lemons-btn-global").addEventListener("click",()=>{bolas.forEach(b=>{b.isLemon=!0,b.innerElm.style.backgroundColor="#FFFF00",b.isRainbow=!1})}),document.getElementById("lemon-btn-single").addEventListener("click",()=>{selectedBall&&(selectedBall.isLemon=!0,selectedBall.innerElm.style.backgroundColor="#FFFF00",selectedBall.isRainbow=!1,updateEditorUI())}),document.documentElement.addEventListener("mouseup",mouseUp),document.documentElement.addEventListener("touchend",mouseUp),document.documentElement.addEventListener("mousemove",mouseMove),document.documentElement.addEventListener("touchmove",mouseMove),syncUIToSettings(),setupEditor();for(let i=0;i<3;i++)createBall();gameLoop()
 }
