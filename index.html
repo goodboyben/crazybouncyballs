@@ -25,11 +25,6 @@ position: absolute;
 width: 100%;
 height: 100%;
 overflow: hidden;
-perspective: 800px;
-transition: transform 0.5s ease-in-out;
-}
-#world.perspective-active {
-    transform: rotateX(15deg);
 }
 .ball {
 margin: 0px;
@@ -45,7 +40,7 @@ height: 100%;
 border-radius: 50%;
 border: solid 5px black;
 box-sizing: border-box;
-transition: border-color 0.3s ease;
+transition: border-color 0.3s ease, filter 0.3s ease, box-shadow 0.1s ease-out;
 }
 /* --- 3D Texture --- */
 .ball.is-3d::before {
@@ -67,8 +62,7 @@ background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.7) 0%, rgba(25
 position: fixed;
 top: 10px;
 right: 10px;
-width: 25%;
-max-width: 300px;
+width: auto;
 min-width: 260px;
 padding: 15px;
 border-radius: 10px;
@@ -127,7 +121,7 @@ button:hover { background-color: #45a049; }
 .warning-btn:hover { background-color: #FBC02D; }
 
 /* --- Menu Header Buttons --- */
-#fullscreen-btn, #gyro-btn, #pause-btn, #perspective-btn, #no-walls-btn, #dark-mode-btn {
+#fullscreen-btn, #gyro-btn, #pause-btn, #no-walls-btn, #dark-mode-btn, #slow-mo-btn {
     width: 36px;
     height: 36px;
     padding: 6px;
@@ -137,12 +131,17 @@ button:hover { background-color: #45a049; }
     border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 50%;
     transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 11px;
 }
 #fullscreen-btn { margin-left: 0; } /* First button has no margin */
-#fullscreen-btn:hover, #gyro-btn:hover, #pause-btn:hover, #perspective-btn:hover, #no-walls-btn:hover, #dark-mode-btn:hover {
+#fullscreen-btn:hover, #gyro-btn:hover, #pause-btn:hover, #no-walls-btn:hover, #dark-mode-btn:hover, #slow-mo-btn:hover {
     background-color: rgba(255, 255, 255, 0.3);
 }
-#fullscreen-btn svg, #gyro-btn svg, #pause-btn svg, #perspective-btn svg, #no-walls-btn svg, #dark-mode-btn svg {
+#fullscreen-btn svg, #gyro-btn svg, #pause-btn svg, #no-walls-btn svg, #dark-mode-btn svg {
     width: 100%;
     height: 100%;
     color: white;
@@ -152,17 +151,26 @@ button:hover { background-color: #45a049; }
     box-shadow: 0 0 8px rgba(33, 150, 243, 0.7), 0 0 16px rgba(33, 150, 243, 0.7);
     border-color: #4dabf5;
 }
+.menu-header button.glow-active {
+    background: radial-gradient(circle, #81c784, #00FF00);
+    box-shadow: 0 0 8px rgba(0, 255, 0, 0.7), 0 0 16px rgba(0, 255, 0, 0.7);
+    border-color: #81c784;
+}
 .gyro-controls-disabled {
     opacity: 0.4;
     pointer-events: none;
 }
 
-/* --- Dark Mode Styles --- */
+/* --- Dark & Glow Mode Styles --- */
 body.dark-mode {
     background-color: #1a1a1a;
 }
 body.dark-mode .ball-inner {
     border-color: #f0f0f0;
+    filter: brightness(0.7);
+}
+body.glow-mode .ball-inner {
+    filter: brightness(1.0); /* Glowing balls are full brightness */
 }
 body.dark-mode .ball.is-3d::before {
     background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 15%, transparent 40%, rgba(255,255,255,0.1) 100%);
@@ -174,6 +182,11 @@ body.dark-mode .menu-header button.active {
     background: radial-gradient(circle, #0b7dda, #0d47a1);
     box-shadow: 0 0 8px rgba(33, 150, 243, 0.5), 0 0 16px rgba(33, 150, 243, 0.5);
     border-color: #0b7dda;
+}
+body.dark-mode .menu-header button.glow-active {
+    background: radial-gradient(circle, #43a047, #1b5e20);
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.5), 0 0 16px rgba(76, 175, 80, 0.5);
+    border-color: #43a047;
 }
 
 
@@ -230,9 +243,9 @@ padding: 0 10px;
 
 /* --- Misc Styles --- */
 .trail, .particle, .flash { position: absolute; pointer-events: none; }
-.trail { border-radius: 50%; opacity: 0.7; transition: all 0.5s ease-out; }
+.trail { border-radius: 50%; opacity: 0.7; transition-property: transform, opacity; }
 .particle { border-radius: 50%; z-index: 20; }
-.flash { z-index: 50; border-radius: 50%; background-color: white; opacity: 0; }
+.flash { z-index: 50; border-radius: 50%; background-color: white; opacity: 0; transition-property: opacity, transform; }
 #show-menu-hint { position: fixed; top: 10px; right: 10px; background-color: rgba(0, 0, 0, 0.5); color: #ffffff; padding: 5px 15px; border-radius: 20px; font-size: 14px; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; z-index: 99; }
 #show-menu-hint.visible { opacity: 0.2; }
 .highlight-box { position: absolute; border: 3px dashed #00FFFF; z-index: 50; pointer-events: none; box-sizing: border-box; border-radius: 50%; }
@@ -246,7 +259,7 @@ padding: 0 10px;
 <div id="side-box" class="menu-box">
     <div class="menu-header">
         <button id="fullscreen-btn" title="Toggle Fullscreen">
-            <svg id="fullscreen-enter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
         </button>
         <button id="gyro-btn" title="Toggle Gyroscope Control" style="display:none;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -254,6 +267,9 @@ padding: 0 10px;
                 <line x1="8" y1="12" x2="16" y2="12"></line>
                 <circle cx="7" cy="12" r="2"></circle>
             </svg>
+        </button>
+        <button id="slow-mo-btn" title="Cycle Speed">
+            <span id="speed-text">1x</span>
         </button>
         <button id="pause-btn" title="Pause Simulation">
             <svg id="pause-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -264,19 +280,12 @@ padding: 0 10px;
                 <polygon points="5 3 19 12 5 21 5 3"></polygon>
             </svg>
         </button>
-        <button id="perspective-btn" title="Toggle 3D Perspective">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                <line x1="12" y1="22.08" x2="12" y2="12"></line>
-            </svg>
-        </button>
         <button id="no-walls-btn" title="Toggle Portal Walls">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 2">
                 <rect x="3" y="3" width="18" height="18" rx="2"></rect>
             </svg>
         </button>
-        <button id="dark-mode-btn" title="Toggle Dark Mode">
+        <button id="dark-mode-btn" title="Cycle Theme">
              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 21.5A9.5 9.5 0 1 0 12 2.5 9.5 9.5 0 0 0 12 21.5z"></path>
                 <path d="M12 2.5A9.5 9.5 0 0 1 12 21.5" fill="currentColor"></path>
@@ -377,6 +386,10 @@ let lastActiveMenuId = 'side-box';
 // --- NEW STATE VARIABLES ---
 let isPaused = false;
 let isNoWallsActive = false;
+let preNoWallsGravity = 0;
+let darkModeState = 0; // 0: Light, 1: Dark, 2: Glow
+const speedMultipliers = [1, 0.5, 0.25, 0.1];
+let currentSpeedIndex = 0;
 
 let soundEnabled = true;
 let useLemonSounds = true;
@@ -577,21 +590,22 @@ async function toggleGyro() {
 
 // --- CORE PHYSICS & ANIMATION ---
 function squishBall(ball, impactVelocity, angleDeg = 0) {
-const timeout = extraSquishy ? 50 : 30;
-const squishFactor = Math.min(Math.abs(impactVelocity) / MAX_SQUISH_VELOCITY, 1);
-const stretch = 1 + (MAX_SQUISH_RATIO - 1) * squishFactor;
-const squash = 1 / stretch;
+    const currentSpeed = speedMultipliers[currentSpeedIndex];
+    const timeout = (extraSquishy ? 50 : 30) / currentSpeed;
+    const squishFactor = Math.min(Math.abs(impactVelocity) / MAX_SQUISH_VELOCITY, 1);
+    const stretch = 1 + (MAX_SQUISH_RATIO - 1) * squishFactor;
+    const squash = 1 / stretch;
 
-const isHorizontal = Math.abs(angleDeg) > 45 && Math.abs(angleDeg) < 135;
-const scaleX = isHorizontal ? squash : stretch;
-const scaleY = isHorizontal ? stretch : squash;
+    const isHorizontal = Math.abs(angleDeg) > 45 && Math.abs(angleDeg) < 135;
+    const scaleX = isHorizontal ? squash : stretch;
+    const scaleY = isHorizontal ? stretch : squash;
 
-ball.elm.style.transitionDuration = extraSquishy ? '0.05s' : '0.03s';
-ball.elm.style.transform = `scaleX(${scaleX}) scaleY(${scaleY})`;
+    ball.elm.style.transitionDuration = `${(extraSquishy ? 0.05 : 0.03) / currentSpeed}s`;
+    ball.elm.style.transform = `scaleX(${scaleX}) scaleY(${scaleY})`;
 
-setTimeout(() => {
-if (ball.elm) ball.elm.style.transform = 'none';
-}, timeout);
+    setTimeout(() => {
+        if (ball.elm) ball.elm.style.transform = 'none';
+    }, timeout);
 }
 
 function createBall() {
@@ -712,41 +726,44 @@ ball2.velocidadeY = ty * dpTan2 + ny * m2 * avgRestitution;
 }
 
 function createExplosion(x, y, explodingBall) {
-playExplodeSound();
-applyExplosionForce(x, y, explodingBall);
+    const currentSpeed = speedMultipliers[currentSpeedIndex];
+    playExplodeSound();
+    applyExplosionForce(x, y, explodingBall);
 
-const flash = document.createElement('div');
-flash.className = 'flash';
-flash.style.left = `${x - 200}px`;
-flash.style.top = `${window.innerHeight - y - 200}px`;
-flash.style.width = '400px';
-flash.style.height = '400px';
-flash.style.transition = 'opacity 0.2s ease-out, transform 0.2s ease-out';
-world.appendChild(flash);
-setTimeout(() => { flash.style.opacity = '0.8'; flash.style.transform = 'scale(1.5)'; }, 10);
-setTimeout(() => { flash.style.opacity = '0'; }, 100);
-setTimeout(() => world.removeChild(flash), 300);
+    const flash = document.createElement('div');
+    flash.className = 'flash';
+    flash.style.left = `${x - 200}px`;
+    flash.style.top = `${window.innerHeight - y - 200}px`;
+    flash.style.width = '400px';
+    flash.style.height = '400px';
+    flash.style.transitionDuration = `${0.2 / currentSpeed}s`;
+    flash.style.transitionTimingFunction = 'ease-out';
+    world.appendChild(flash);
+    
+    setTimeout(() => { flash.style.opacity = '0.8'; flash.style.transform = 'scale(1.5)'; }, 10 / currentSpeed);
+    setTimeout(() => { flash.style.opacity = '0'; }, 100 / currentSpeed);
+    setTimeout(() => world.removeChild(flash), 300 / currentSpeed);
 
-for (let i = 0; i < 50; i++) {
-const particleElm = document.createElement('div');
-particleElm.className = 'particle';
-const size = random(3, 12);
-particleElm.style.width = `${size}px`;
-particleElm.style.height = `${size}px`;
-const colors = ['#FFFF00', '#FFD700', '#FFA500', '#FFFFFF'];
-particleElm.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    for (let i = 0; i < 50; i++) {
+        const particleElm = document.createElement('div');
+        particleElm.className = 'particle';
+        const size = random(3, 12);
+        particleElm.style.width = `${size}px`;
+        particleElm.style.height = `${size}px`;
+        const colors = ['#FFFF00', '#FFD700', '#FFA500', '#FFFFFF'];
+        particleElm.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
 
-const angle = random(0, Math.PI * 2);
-const speed = random(8, 25);
+        const angle = random(0, Math.PI * 2);
+        const speed = random(8, 25);
 
-particles.push({
-elm: particleElm, x: x, y: y,
-vx: Math.cos(angle) * speed,
-vy: Math.sin(angle) * speed,
-lifetime: 100,
-});
-world.appendChild(particleElm);
-}
+        particles.push({
+            elm: particleElm, x: x, y: y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            lifetime: 100,
+        });
+        world.appendChild(particleElm);
+    }
 }
 
 function applyExplosionForce(explosionX, explosionY, explodingBall) {
@@ -768,17 +785,18 @@ otherBall.velocidadeY += ny * force * explosionPower;
 }
 
 function runPhysics() {
-bolas.forEach(l => {
-if (l.toBeDeleted) return;
-if (l !== draggedBall) {
-l.velocidadeY -= getBallProperty(l, "gravidade");
-l.velocidadeX += getBallProperty(l, "vento");
-l.velocidadeX *= .99;
-l.velocidadeY *= .99;
-l.x += l.velocidadeX;
-l.y += l.velocidadeY;
-}
-});
+    const currentSpeed = speedMultipliers[currentSpeedIndex];
+    bolas.forEach(l => {
+        if (l.toBeDeleted) return;
+        if (l !== draggedBall) {
+            l.velocidadeY -= getBallProperty(l, "gravidade") * currentSpeed;
+            l.velocidadeX += getBallProperty(l, "vento") * currentSpeed;
+            l.velocidadeX *= .99;
+            l.velocidadeY *= .99;
+            l.x += l.velocidadeX * currentSpeed;
+            l.y += l.velocidadeY * currentSpeed;
+        }
+    });
 
 for (let k = 0; k < 3; k++) {
 bolas.forEach(l => {
@@ -789,10 +807,11 @@ let explode = false;
 const useAnimations = getBallAnimationStatus(l);
 
 if (isNoWallsActive) {
-    if (l.x - t > window.innerWidth) l.x = -t;
-    else if (l.x + t < 0) l.x = window.innerWidth + t;
-    if (l.y - t > window.innerHeight) l.y = -t;
-    else if (l.y + t < 0) l.y = window.innerHeight + t;
+    const buffer = t; // Allow ball to go fully off-screen before wrapping
+    if (l.x - buffer > window.innerWidth) l.x = -buffer;
+    else if (l.x + buffer < 0) l.x = window.innerWidth + buffer;
+    if (l.y - buffer > window.innerHeight) l.y = -buffer;
+    else if (l.y + buffer < 0) l.y = window.innerHeight + buffer;
 } else {
     if (l.x + t > window.innerWidth) { o = l.velocidadeX; l.x = window.innerWidth - t; if (l.isLemon && Math.abs(o) > 40) explode = true; else { animationsEnabled && useAnimations && squishBall(l, o, 90); l.velocidadeX *= -e; if (Math.abs(o) > 4) playBounceSound(l, Math.abs(o) / 20); } }
     else if (l.x - t < 0) { o = l.velocidadeX; l.x = t; if (l.isLemon && Math.abs(o) > 40) explode = true; else { animationsEnabled && useAnimations && squishBall(l, o, 90); l.velocidadeX *= -e; if (Math.abs(o) > 4) playBounceSound(l, Math.abs(o) / 20); } }
@@ -827,41 +846,87 @@ bolas = bolas.filter(b => !b.toBeDeleted);
 }
 
 function updateParticles() {
-for (let i = particles.length - 1; i >= 0; i--) {
-const p = particles[i];
-p.vy -= settings.gravidade * 0.5;
-p.x += p.vx;
-p.y += p.vy;
-p.lifetime--;
-p.elm.style.opacity = p.lifetime / 100;
-p.elm.style.left = `${p.x}px`;
-p.elm.style.top = `${window.innerHeight - p.y}px`;
+    const currentSpeed = speedMultipliers[currentSpeedIndex];
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.vy -= settings.gravidade * 0.5 * currentSpeed;
+        p.x += p.vx * currentSpeed;
+        p.y += p.vy * currentSpeed;
+        p.lifetime -= currentSpeed;
+        p.elm.style.opacity = p.lifetime / 100;
+        p.elm.style.left = `${p.x}px`;
+        p.elm.style.top = `${window.innerHeight - p.y}px`;
 
-if (p.lifetime <= 0) {
-world.removeChild(p.elm);
-particles.splice(i, 1);
-}
-}
+        if (p.lifetime <= 0) {
+            world.removeChild(p.elm);
+            particles.splice(i, 1);
+        }
+    }
 }
 
 function renderVisuals() {
+    const currentSpeed = speedMultipliers[currentSpeedIndex];
+    const isGlowMode = darkModeState === 2;
     bolas.forEach(l => {
         const t = getBallProperty(l, "tamanho"),
             e = getBallUltraGraphicsStatus(l),
             a = getBallTrailsStatus(l);
         if (a && (Math.abs(l.velocidadeX) > 1 || Math.abs(l.velocidadeY) > 1)) {
-            const t = document.createElement("div");
-            t.className = "trail", e && t.classList.add("is-3d"), t.style.backgroundColor = l.innerElm.style.backgroundColor, t.style.width = t.style.height = `${getBallProperty(l,"tamanho")}px`, t.style.left = `${l.x-getBallProperty(l,"tamanho")/2}px`, t.style.top = `${window.innerHeight-l.y-getBallProperty(l,"tamanho")/2}px`, world.appendChild(t), setTimeout(() => {
-                t.style.transform = "scale(0)", t.style.opacity = "0", setTimeout(() => world.removeChild(t), 500)
-            }, 10)
+            const trailElm = document.createElement("div");
+            trailElm.className = "trail";
+            if (e) trailElm.classList.add("is-3d");
+            trailElm.style.backgroundColor = l.innerElm.style.backgroundColor;
+            trailElm.style.width = trailElm.style.height = `${getBallProperty(l,"tamanho")}px`;
+            trailElm.style.left = `${l.x-getBallProperty(l,"tamanho")/2}px`;
+            trailElm.style.top = `${window.innerHeight-l.y-getBallProperty(l,"tamanho")/2}px`;
+            trailElm.style.transitionDuration = `${0.5 / currentSpeed}s`;
+            trailElm.style.transitionTimingFunction = 'ease-out';
+            world.appendChild(trailElm);
+            setTimeout(() => {
+                trailElm.style.transform = "scale(0)";
+                trailElm.style.opacity = "0";
+                setTimeout(() => world.removeChild(trailElm), 500 / currentSpeed);
+            }, 10 / currentSpeed);
         }
-        l.isRainbow && !l.isLemon && (l.hue = (l.hue + 1) % 360, l.innerElm.style.backgroundColor = `hsl(${l.hue}, 100%, 50%)`), e ? (l.elm.classList.add("is-3d"), l.innerElm.style.border = "none", heightRatio = Math.max(0, l.y / 1.2 / window.innerHeight), blur = 5 + 30 * heightRatio, spread = 2 + 10 * heightRatio, 
-        // --- MODIFIED FOR DARK MODE ---
-        isDarkMode = document.body.classList.contains('dark-mode'),
-        shadowColor = isDarkMode ? `rgba(255,255,255,0.15)` : `rgba(0,0,0,${Math.max(0,.6-.5*heightRatio)})`,
-        offsetY = 5 + 80 * heightRatio, 
-        l.elm.style.boxShadow = `0px ${offsetY}px ${blur}px ${spread}px ${shadowColor}`
-        ) : (l.elm.classList.remove("is-3d"), l.innerElm.style.border = "solid 5px", l.elm.style.boxShadow = "none"), l.elm.style.width = `${t}px`, l.elm.style.height = `${t}px`, l.elm.style.top = `${window.innerHeight-l.y-t/2}px`, l.elm.style.left = `${l.x-t/2}px`, l.highlightElm && (l.highlightElm.style.top = `${window.innerHeight-l.y-t/2-3}px`, l.highlightElm.style.left = `${l.x-t/2-3}px`, l.highlightElm.style.width = `${t}px`, l.highlightElm.style.height = `${t}px`)
+        if (l.isRainbow && !l.isLemon) {
+            l.hue = (l.hue + 1) % 360;
+            l.innerElm.style.backgroundColor = `hsl(${l.hue}, 100%, 50%)`;
+        }
+        
+        if (isGlowMode && !l.isLemon) {
+            const glowColor = l.innerElm.style.backgroundColor;
+            const rgbValues = glowColor.match(/\d+/g);
+            if (rgbValues && rgbValues.length >= 3) {
+                 l.innerElm.style.boxShadow = `0 0 8px 2px rgba(${rgbValues[0]},${rgbValues[1]},${rgbValues[2]},1), 0 0 20px 8px rgba(${rgbValues[0]},${rgbValues[1]},${rgbValues[2]},0.34)`;
+            }
+        } else {
+            l.innerElm.style.boxShadow = 'none';
+        }
+        
+        if (e) {
+            l.elm.classList.add("is-3d");
+            l.innerElm.style.border = "none";
+            const heightRatio = Math.max(0, l.y / 1.2 / window.innerHeight);
+            const blur = 5 + 30 * heightRatio;
+            const spread = 2 + 10 * heightRatio;
+            const offsetY = 5 + 80 * heightRatio;
+            
+            let shadowColor;
+            if (isGlowMode && !l.isLemon) {
+                shadowColor = 'transparent';
+            } else if (darkModeState > 0) {
+                shadowColor = `rgba(0,0,0,0.5)`;
+            } else {
+                shadowColor = `rgba(0,0,0,${Math.max(0,.6-.5*heightRatio)})`;
+            }
+            l.elm.style.boxShadow = `0px ${offsetY}px ${blur}px ${spread}px ${shadowColor}`;
+        } else {
+             l.elm.classList.remove("is-3d");
+             l.innerElm.style.border = "solid 5px";
+             l.elm.style.boxShadow = "none";
+        }
+        
+        l.elm.style.width = `${t}px`, l.elm.style.height = `${t}px`, l.elm.style.top = `${window.innerHeight-l.y-t/2}px`, l.elm.style.left = `${l.x-t/2}px`, l.highlightElm && (l.highlightElm.style.top = `${window.innerHeight-l.y-t/2-3}px`, l.highlightElm.style.left = `${l.x-t/2-3}px`, l.highlightElm.style.width = `${t}px`, l.highlightElm.style.height = `${t}px`);
     })
 }
 
@@ -870,8 +935,8 @@ function gameLoop() {
     if (!isPaused) {
         runPhysics();
         updateParticles();
-        renderVisuals();
     }
+    renderVisuals();
     requestAnimationFrame(gameLoop);
 }
 
@@ -1085,17 +1150,23 @@ function toggleFullscreen() {
     }
 }
 function updateFullscreenIcon() {
-    if (document.fullscreenElement) {
-        fullscreenBtn.classList.add('active');
-    } else {
-        fullscreenBtn.classList.remove('active');
-    }
+    fullscreenBtn.classList.toggle('active', !!document.fullscreenElement);
 }
 fullscreenBtn.addEventListener('click', toggleFullscreen);
 document.addEventListener('fullscreenchange', updateFullscreenIcon);
 // --- End Fullscreen Logic ---
 
 // --- NEW BUTTONS LOGIC ---
+// Slow Motion Button
+const slowMoBtn = document.getElementById('slow-mo-btn');
+const speedText = document.getElementById('speed-text');
+slowMoBtn.addEventListener('click', () => {
+    currentSpeedIndex = (currentSpeedIndex + 1) % speedMultipliers.length;
+    const newSpeed = speedMultipliers[currentSpeedIndex];
+    speedText.textContent = `${newSpeed}x`;
+    slowMoBtn.classList.toggle('active', newSpeed !== 1);
+});
+
 // Pause/Play Button
 const pauseBtn = document.getElementById('pause-btn');
 const pauseIcon = document.getElementById('pause-icon');
@@ -1115,25 +1186,37 @@ pauseBtn.addEventListener('click', () => {
     }
 });
 
-// 3D Perspective Button
-const perspectiveBtn = document.getElementById('perspective-btn');
-perspectiveBtn.addEventListener('click', () => {
-    world.classList.toggle('perspective-active');
-    perspectiveBtn.classList.toggle('active');
-});
-
 // No Walls Button
 const noWallsBtn = document.getElementById('no-walls-btn');
 noWallsBtn.addEventListener('click', () => {
     isNoWallsActive = !isNoWallsActive;
     noWallsBtn.classList.toggle('active');
+
+    if (isNoWallsActive) {
+        preNoWallsGravity = settings.gravidade;
+        settings.gravidade = 0;
+    } else {
+        settings.gravidade = preNoWallsGravity;
+    }
+    syncUIToSettings();
 });
 
-// Dark Mode Button
+// 3-State Dark Mode Button
 const darkModeBtn = document.getElementById('dark-mode-btn');
 darkModeBtn.addEventListener('click', () => {
-    document.body.classList.toggle('dark-mode');
-    darkModeBtn.classList.toggle('active');
+    darkModeState = (darkModeState + 1) % 3; // Cycle 0, 1, 2
+    const bodyClassList = document.body.classList;
+    
+    bodyClassList.remove('dark-mode', 'glow-mode');
+    darkModeBtn.classList.remove('active', 'glow-active');
+
+    if (darkModeState === 1) { // Dark Mode
+        bodyClassList.add('dark-mode');
+        darkModeBtn.classList.add('active');
+    } else if (darkModeState === 2) { // Glow Mode
+        bodyClassList.add('dark-mode', 'glow-mode');
+        darkModeBtn.classList.add('glow-active');
+    }
 });
 // --- END NEW BUTTONS LOGIC ---
 
