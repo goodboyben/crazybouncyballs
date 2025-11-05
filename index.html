@@ -119,24 +119,38 @@ button:hover { background-color: #45a049; }
 .warning-btn { background-color: #FFEB3B; color: black; font-weight: bold; }
 .warning-btn:hover { background-color: #FBC02D; }
 
-/* --- Fullscreen Button --- */
-#fullscreen-btn {
-width: 36px;
-height: 36px;
-padding: 6px;
-margin-top: 0;
-background-color: rgba(255, 255, 255, 0.1);
-border: 1px solid rgba(255, 255, 255, 0.3);
-border-radius: 50%;
+/* --- Menu Header Buttons (Fullscreen & Gyro) --- */
+#fullscreen-btn, #gyro-btn {
+    width: 36px;
+    height: 36px;
+    padding: 6px;
+    margin-top: 0;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transition: all 0.3s ease;
 }
-#fullscreen-btn:hover {
-background-color: rgba(255, 255, 255, 0.3);
+#fullscreen-btn:hover, #gyro-btn:hover {
+    background-color: rgba(255, 255, 255, 0.3);
 }
-#fullscreen-btn svg {
-width: 100%;
-height: 100%;
-color: white;
+#fullscreen-btn svg, #gyro-btn svg {
+    width: 100%;
+    height: 100%;
+    color: white;
 }
+#gyro-btn {
+    margin-left: 8px; /* Spacing between buttons */
+}
+#gyro-btn.active {
+    background: radial-gradient(circle, #4dabf5, #2196F3);
+    box-shadow: 0 0 8px rgba(33, 150, 243, 0.7), 0 0 16px rgba(33, 150, 243, 0.7);
+    border-color: #4dabf5;
+}
+.gyro-controls-disabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
 
 /* --- Editor Specific Styles --- */
 #done-btn { position: absolute; top: 10px; left: 10px; width: auto; padding: 5px 10px; font-size: 14px; margin: 0; }
@@ -210,6 +224,14 @@ padding: 0 10px;
         <svg id="fullscreen-enter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
         <svg id="fullscreen-exit-icon" style="display:none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path></svg>
     </button>
+    <button id="gyro-btn" title="Toggle Gyroscope Control" style="display:none;">
+    <!-- Device in Motion Icon -->
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="7" y="4" width="10" height="16" rx="1.5"></rect>
+    <path d="M4 12c0-3.9 3.1-7 7-7"></path>
+    <path d="M11 2l-3 3 3 3"></path>
+</svg>
+    </button>
     </div>
     <button id="add-btn">Add Ball</button>
    <p style="font-size: 10px; opacity: 0.5; margin: 2px 0 0px; text-align: center;">
@@ -237,8 +259,8 @@ padding: 0 10px;
 <div id="editor-content-wrapper">
 <div id="global-settings-editor" class="tab-content active">
 <div class="input-container"> Size: <span id="tamanho-num"></span> <div class="slider-row"><button class="reset-btn">R</button><input id="tamanho" type="range" min="10" max="200" step="1"><input id="tamanho-input" type="number" min="10" max="200" step="1"></div> </div>
-<div class="input-container"> Gravity: <span id="gravidade-num"></span> <div class="slider-row"><button class="reset-btn">R</button><input id="gravidade" type="range" min="-10" max="10" step="0.01"><input id="gravidade-input" type="number" min="-10" max="10" step="0.01"><button class="zero-btn">0</button></div> </div>
-<div class="input-container"> Wind: <span id="vento-num"></span> <div class="slider-row"><button class="reset-btn">R</button><input id="vento" type="range" min="-10" max="10" step="0.01"><input id="vento-input" type="number" min="-10" max="10" step="0.01"></div> </div>
+<div class="input-container"> Gravity: <span id="gravidade-num"></span> <div class="slider-row" id="gravidade-slider-row"><button class="reset-btn">R</button><input id="gravidade" type="range" min="-10" max="10" step="0.01"><input id="gravidade-input" type="number" min="-10" max="10" step="0.01"><button class="zero-btn">0</button></div> </div>
+<div class="input-container"> Wind: <span id="vento-num"></span> <div class="slider-row" id="vento-slider-row"><button class="reset-btn">R</button><input id="vento" type="range" min="-10" max="10" step="0.01"><input id="vento-input" type="number" min="-10" max="10" step="0.01"></div> </div>
 <div class="input-container"> Wall Elasticity: <span id="elasticidade-num"></span> <div class="slider-row"><button class="reset-btn">R</button><input id="elasticidade" type="range" min="0" max="1" step="0.01"><input id="elasticidade-input" type="number" min="0" max="1" step="0.01"><button class="zero-btn">0</button></div> </div>
 <div class="input-container"> Collision Bounciness: <span id="restitution-num"></span> <div class="slider-row"><button class="reset-btn">R</button><input id="restitution" type="range" min="0" max="1" step="0.01"><input id="restitution-input" type="number" min="0" max="1" step="0.01"><button class="zero-btn">0</button></div> </div>
 <div class="divider"></div>
@@ -314,6 +336,11 @@ let bounceChannelIndex = 0;
 let lemonBounceChannelIndex = 0;
 let audioContext = null;
 let soundsUnlocked = false;
+
+// Gyroscope state
+let gyroActive = false;
+let gyroSupported = false;
+let preGyroSettings = {};
 
 const MAX_SQUISH_VELOCITY = 10;
 const MAX_SQUISH_RATIO = 1.19;
@@ -436,6 +463,63 @@ undoBtn.textContent = `Undo Delete (${deletedBolasStack.length})`;
 undoBtn.classList.add('button-hidden');
 }
 }
+
+// --- GYROSCOPE FUNCTIONS ---
+function handleOrientation(event) {
+    if (!gyroActive) return;
+    const maxForce = 5;
+    const gamma = event.gamma; // side to side [-90, 90]
+    const beta = event.beta; // front to back [-180, 180]
+    let newVento = (Math.max(-90, Math.min(90, gamma)) / 90) * maxForce;
+    let newGravidade = (Math.max(-90, Math.min(90, beta)) / 90) * maxForce;
+    settings.vento = newVento;
+    settings.gravidade = newGravidade;
+    syncUIToSettings();
+}
+
+async function toggleGyro() {
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        const permission = await DeviceOrientationEvent.requestPermission();
+        if (permission !== 'granted') {
+            alert('Gyroscope permission was not granted.');
+            if (gyroActive) {
+                gyroActive = false; 
+                const gyroBtn = document.getElementById('gyro-btn');
+                gyroBtn.classList.remove('active');
+                window.removeEventListener('deviceorientation', handleOrientation, true);
+                document.getElementById('gravidade-slider-row').classList.remove('gyro-controls-disabled');
+                document.getElementById('vento-slider-row').classList.remove('gyro-controls-disabled');
+                settings.gravidade = preGyroSettings.gravidade;
+                settings.vento = preGyroSettings.vento;
+                syncUIToSettings();
+            }
+            return;
+        }
+    }
+
+    gyroActive = !gyroActive;
+    const gyroBtn = document.getElementById('gyro-btn');
+    const gravidadeSliderRow = document.getElementById('gravidade-slider-row');
+    const ventoSliderRow = document.getElementById('vento-slider-row');
+
+    if (gyroActive) {
+        gyroBtn.classList.add('active');
+        preGyroSettings.gravidade = settings.gravidade;
+        preGyroSettings.vento = settings.vento;
+        gravidadeSliderRow.classList.add('gyro-controls-disabled');
+        ventoSliderRow.classList.add('gyro-controls-disabled');
+        window.addEventListener('deviceorientation', handleOrientation, true);
+    } else {
+        gyroBtn.classList.remove('active');
+        window.removeEventListener('deviceorientation', handleOrientation, true);
+        gravidadeSliderRow.classList.remove('gyro-controls-disabled');
+        ventoSliderRow.classList.remove('gyro-controls-disabled');
+        settings.gravidade = preGyroSettings.gravidade;
+        settings.vento = preGyroSettings.vento;
+        syncUIToSettings();
+    }
+}
+
 
 // --- CORE PHYSICS & ANIMATION ---
 function squishBall(ball, impactVelocity, angleDeg = 0) {
@@ -935,7 +1019,20 @@ fullscreenBtn.addEventListener('click', toggleFullscreen);
 document.addEventListener('fullscreenchange', updateFullscreenIcon);
 // --- End Fullscreen Logic ---
 
-const setupSlider=(key,isSingle)=>{const suffix=isSingle?"-s":"",slider=document.getElementById(key+suffix),numInput=document.getElementById(`${key}-input${suffix}`),display=document.getElementById(`${key}-num${suffix}`),zeroBtn=slider.parentElement.querySelector(".zero-btn"),resetBtn=slider.parentElement.querySelector(".reset-btn");function updateValue(value){const min=parseFloat(slider.min),max=parseFloat(slider.max),clampedValue=Math.max(min,Math.min(max,value));slider.value=clampedValue,numInput&&(numInput.value=clampedValue),display&&(display.textContent=clampedValue.toFixed("tamanho"===key?0:2)),isSingle?selectedBall&&(selectedBall[key]=clampedValue):settings[key]=clampedValue}slider.addEventListener("input",()=>updateValue(parseFloat(slider.value))),numInput&&numInput.addEventListener("change",()=>updateValue(parseFloat(numInput.value))),zeroBtn&&zeroBtn.addEventListener("click",()=>updateValue(0)),resetBtn&&resetBtn.addEventListener("click",()=>{isSingle?selectedBall&&(selectedBall[key]=null,updateValue(settings[key])):updateValue(defaultSettings[key])})};const sliderKeys=["tamanho","gravidade","vento","elasticidade","restitution"];sliderKeys.forEach(key=>setupSlider(key,!1)),sliderKeys.forEach(key=>setupSlider(key,!0)),document.getElementById("sound-toggle").addEventListener("change",e=>soundEnabled=e.target.checked),document.getElementById("lemon-sound-toggle").addEventListener("change",e=>useLemonSounds=e.target.checked),document.querySelector('.sounds-toggle').addEventListener('click', e => e.currentTarget.parentElement.classList.toggle('open')),document.getElementById("ultra-graphics-toggle").addEventListener("change",e=>ultraGraphicsEnabled=e.target.checked),document.getElementById("trails-toggle").addEventListener("change",e=>{trailsEnabled=e.target.checked;bolas.forEach(b=>b.trailsEnabled=null)}),document.getElementById("color-toggle").addEventListener("change",e=>{changeColorOnBounce=e.target.checked,bolas.forEach(b=>b.changeColorOnBounceEnabled=changeColorOnBounce),changeColorOnBounce&&(allRainbows=!1,bolas.forEach(b=>b.isRainbow=!1),syncUIToSettings())}),document.getElementById("rainbows-toggle").addEventListener("change",e=>{allRainbows=e.target.checked;const colorToggle=document.getElementById("color-toggle");colorToggle.disabled=allRainbows,bolas.forEach(b=>{if(b.isLemon)return;b.isRainbow=allRainbows}),allRainbows&&(changeColorOnBounce=!1,colorToggle.checked=!1,bolas.forEach(b=>{if(b.isLemon)return;b.changeColorOnBounceEnabled=!1}),syncUIToSettings())});const animationToggle=document.getElementById("animation-toggle"),squishyToggle=document.getElementById("squishy-toggle");animationToggle.addEventListener("change",e=>{animationsEnabled=e.target.checked,squishyToggle.disabled=!animationsEnabled}),squishyToggle.addEventListener("change",e=>extraSquishy=e.target.checked),document.getElementById("add-btn").addEventListener("click",createBall),document.getElementById("clear-btn").addEventListener("click",()=>{confirm("Are you sure you want to clear all balls?")&&(bolas=[],particles=[],selectedBall=null,world.innerHTML="",deletedBolasStack=[],updateUndoButtonVisibility(),updateEditorUI())}),document.getElementById("undo-btn").addEventListener("click",()=>{deletedBolasStack.length>0&&(ballToRestore=deletedBolasStack.pop(),bolas.push(ballToRestore),world.appendChild(ballToRestore.elm),updateUndoButtonVisibility())}),document.getElementById("editor-btn").addEventListener("click",()=>{document.getElementById("side-box").classList.add("hidden"),document.getElementById("editor-box").classList.remove("hidden"),document.body.classList.add("editor-active"),lastActiveMenuId="editor-box",updateUndoButtonVisibility(),updateEditorUI()}),document.getElementById("done-btn").addEventListener("click",closeEditor),document.getElementById("reset-btn").addEventListener("click",()=>{settings={...defaultSettings},trailsEnabled=!1,changeColorOnBounce=!0,animationsEnabled=!0,extraSquishy=!1,allRainbows=!1,ultraGraphicsEnabled=!1,bolas.forEach(b=>{b.isRainbow=!1,b.isLemon=!1,b.animationsEnabled=!0,b.trailsEnabled=null,b.changeColorOnBounceEnabled=!0,b.innerElm.style.backgroundColor=getRandomColor(),sliderKeys.forEach(key=>b[key]=null),b.ultraGraphicsEnabled=null}),syncUIToSettings()}),document.getElementById("delete-btn").addEventListener("click",()=>{selectedBall&&bolas.indexOf(selectedBall)>-1&&(world.removeChild(selectedBall.elm),selectedBall.highlightElm&&world.removeChild(selectedBall.highlightElm),bolas.splice(bolas.indexOf(selectedBall),1),deletedBolasStack.push(selectedBall),selectedBall=null,updateEditorUI(),updateUndoButtonVisibility())});const isTouchDevice=window.matchMedia("(pointer: coarse)").matches,menuToggleHint=document.getElementById("menu-toggle-hint"),showMenuHint=document.getElementById("show-menu-hint");isTouchDevice?(document.body.addEventListener("touchstart",e=>{initAudioContext(),("world"===e.target.id&&2===e.touches.length)&&(e.preventDefault(),toggleMenu())}),showMenuHint.textContent="Two-finger tap to show menu",menuToggleHint.textContent="Two-finger tap the background to hide/show."):(clickCount=0,lastClickTime=0,document.body.addEventListener("click",e=>{if(initAudioContext(),"world"!==e.target.id)return;const currentTime=(new Date).getTime();currentTime-lastClickTime>400?clickCount=1:clickCount++,lastClickTime=currentTime,3===clickCount&&(toggleMenu(),clickCount=0)}),showMenuHint.textContent="Triple-click to show menu",menuToggleHint.textContent="Triple-click the background to hide/show this menu."),document.getElementById("randomize-colors-btn").addEventListener("click",()=>{bolas.forEach(b=>{if(b.isLemon)return;applyColorToBall(getRandomColor(),b)})}),document.getElementById("randomize-color-btn-single").addEventListener("click",()=>{selectedBall&&applyColorToBall(getRandomColor(),selectedBall)}),document.getElementById("lemons-btn-global").addEventListener("click",()=>{bolas.forEach(b=>{b.isLemon=!0,b.innerElm.style.backgroundColor="#FFFF00",b.isRainbow=!1})}),document.getElementById("lemon-btn-single").addEventListener("click",()=>{selectedBall&&(selectedBall.isLemon=!0,selectedBall.innerElm.style.backgroundColor="#FFFF00",selectedBall.isRainbow=!1,updateEditorUI())}),document.documentElement.addEventListener("mouseup",mouseUp),document.documentElement.addEventListener("touchend",mouseUp),document.documentElement.addEventListener("mousemove",mouseMove),document.documentElement.addEventListener("touchmove",mouseMove),syncUIToSettings(),setupEditor();for(let i=0;i<3;i++)createBall();gameLoop()
+const setupSlider=(key,isSingle)=>{const suffix=isSingle?"-s":"",slider=document.getElementById(key+suffix),numInput=document.getElementById(`${key}-input${suffix}`),display=document.getElementById(`${key}-num${suffix}`),zeroBtn=slider.parentElement.querySelector(".zero-btn"),resetBtn=slider.parentElement.querySelector(".reset-btn");function updateValue(value){const min=parseFloat(slider.min),max=parseFloat(slider.max),clampedValue=Math.max(min,Math.min(max,value));slider.value=clampedValue,numInput&&(numInput.value=clampedValue),display&&(display.textContent=clampedValue.toFixed("tamanho"===key?0:2)),isSingle?selectedBall&&(selectedBall[key]=clampedValue):settings[key]=clampedValue}slider.addEventListener("input",()=>updateValue(parseFloat(slider.value))),numInput&&numInput.addEventListener("change",()=>updateValue(parseFloat(numInput.value))),zeroBtn&&zeroBtn.addEventListener("click",()=>updateValue(0)),resetBtn&&resetBtn.addEventListener("click",()=>{isSingle?selectedBall&&(selectedBall[key]=null,updateValue(settings[key])):updateValue(defaultSettings[key])})};const sliderKeys=["tamanho","gravidade","vento","elasticidade","restitution"];sliderKeys.forEach(key=>setupSlider(key,!1)),sliderKeys.forEach(key=>setupSlider(key,!0)),document.getElementById("sound-toggle").addEventListener("change",e=>soundEnabled=e.target.checked),document.getElementById("lemon-sound-toggle").addEventListener("change",e=>useLemonSounds=e.target.checked),document.querySelector('.sounds-toggle').addEventListener('click', e => e.currentTarget.parentElement.classList.toggle('open')),document.getElementById("ultra-graphics-toggle").addEventListener("change",e=>ultraGraphicsEnabled=e.target.checked),document.getElementById("trails-toggle").addEventListener("change",e=>{trailsEnabled=e.target.checked;bolas.forEach(b=>b.trailsEnabled=null)}),document.getElementById("color-toggle").addEventListener("change",e=>{changeColorOnBounce=e.target.checked,bolas.forEach(b=>b.changeColorOnBounceEnabled=changeColorOnBounce),changeColorOnBounce&&(allRainbows=!1,bolas.forEach(b=>b.isRainbow=!1),syncUIToSettings())}),document.getElementById("rainbows-toggle").addEventListener("change",e=>{allRainbows=e.target.checked;const colorToggle=document.getElementById("color-toggle");colorToggle.disabled=allRainbows,bolas.forEach(b=>{if(b.isLemon)return;b.isRainbow=allRainbows}),allRainbows&&(changeColorOnBounce=!1,colorToggle.checked=!1,bolas.forEach(b=>{if(b.isLemon)return;b.changeColorOnBounceEnabled=!1}),syncUIToSettings())});const animationToggle=document.getElementById("animation-toggle"),squishyToggle=document.getElementById("squishy-toggle");animationToggle.addEventListener("change",e=>{animationsEnabled=e.target.checked,squishyToggle.disabled=!animationsEnabled}),squishyToggle.addEventListener("change",e=>extraSquishy=e.target.checked),document.getElementById("add-btn").addEventListener("click",createBall),document.getElementById("clear-btn").addEventListener("click",()=>{confirm("Are you sure you want to clear all balls?")&&(bolas=[],particles=[],selectedBall=null,world.innerHTML="",deletedBolasStack=[],updateUndoButtonVisibility(),updateEditorUI())}),document.getElementById("undo-btn").addEventListener("click",()=>{deletedBolasStack.length>0&&(ballToRestore=deletedBolasStack.pop(),bolas.push(ballToRestore),world.appendChild(ballToRestore.elm),updateUndoButtonVisibility())}),document.getElementById("editor-btn").addEventListener("click",()=>{document.getElementById("side-box").classList.add("hidden"),document.getElementById("editor-box").classList.remove("hidden"),document.body.classList.add("editor-active"),lastActiveMenuId="editor-box",updateUndoButtonVisibility(),updateEditorUI()}),document.getElementById("done-btn").addEventListener("click",closeEditor),document.getElementById("reset-btn").addEventListener("click",()=>{settings={...defaultSettings},trailsEnabled=!1,changeColorOnBounce=!0,animationsEnabled=!0,extraSquishy=!1,allRainbows=!1,ultraGraphicsEnabled=!1,bolas.forEach(b=>{b.isRainbow=!1,b.isLemon=!1,b.animationsEnabled=!0,b.trailsEnabled=null,b.changeColorOnBounceEnabled=!0,b.innerElm.style.backgroundColor=getRandomColor(),sliderKeys.forEach(key=>b[key]=null),b.ultraGraphicsEnabled=null}),syncUIToSettings()}),document.getElementById("delete-btn").addEventListener("click",()=>{selectedBall&&bolas.indexOf(selectedBall)>-1&&(world.removeChild(selectedBall.elm),selectedBall.highlightElm&&world.removeChild(selectedBall.highlightElm),bolas.splice(bolas.indexOf(selectedBall),1),deletedBolasStack.push(selectedBall),selectedBall=null,updateEditorUI(),updateUndoButtonVisibility())});const isTouchDevice=window.matchMedia("(pointer: coarse)").matches,menuToggleHint=document.getElementById("menu-toggle-hint"),showMenuHint=document.getElementById("show-menu-hint");isTouchDevice?(document.body.addEventListener("touchstart",e=>{initAudioContext(),("world"===e.target.id&&2===e.touches.length)&&(e.preventDefault(),toggleMenu())}),showMenuHint.textContent="Two-finger tap to show menu",menuToggleHint.textContent="Two-finger tap the background to hide/show."):(clickCount=0,lastClickTime=0,document.body.addEventListener("click",e=>{if(initAudioContext(),"world"!==e.target.id)return;const currentTime=(new Date).getTime();currentTime-lastClickTime>400?clickCount=1:clickCount++,lastClickTime=currentTime,3===clickCount&&(toggleMenu(),clickCount=0)}),showMenuHint.textContent="Triple-click to show menu",menuToggleHint.textContent="Triple-click the background to hide/show this menu."),document.getElementById("randomize-colors-btn").addEventListener("click",()=>{bolas.forEach(b=>{if(b.isLemon)return;applyColorToBall(getRandomColor(),b)})}),document.getElementById("randomize-color-btn-single").addEventListener("click",()=>{selectedBall&&applyColorToBall(getRandomColor(),selectedBall)}),document.getElementById("lemons-btn-global").addEventListener("click",()=>{bolas.forEach(b=>{b.isLemon=!0,b.innerElm.style.backgroundColor="#FFFF00",b.isRainbow=!1})}),document.getElementById("lemon-btn-single").addEventListener("click",()=>{selectedBall&&(selectedBall.isLemon=!0,selectedBall.innerElm.style.backgroundColor="#FFFF00",selectedBall.isRainbow=!1,updateEditorUI())}),document.documentElement.addEventListener("mouseup",mouseUp),document.documentElement.addEventListener("touchend",mouseUp),document.documentElement.addEventListener("mousemove",mouseMove),document.documentElement.addEventListener("touchmove",mouseMove);
+
+// --- Gyroscope Setup ---
+if (window.DeviceOrientationEvent) {
+    gyroSupported = true;
+    const gyroBtn = document.getElementById('gyro-btn');
+    gyroBtn.style.display = 'block';
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        gyroBtn.title = "Enable Gyroscope (requires permission)";
+    }
+    gyroBtn.addEventListener('click', toggleGyro);
+}
+
+syncUIToSettings(),setupEditor();for(let i=0;i<3;i++)createBall();gameLoop()
 }
 
 init();
