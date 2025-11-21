@@ -42,7 +42,25 @@ border: solid 5px black;
 box-sizing: border-box;
 transition: border-color 0.3s ease, filter 0.3s ease, box-shadow 0.1s ease-out;
 }
-/* --- 3D Texture --- */
+/* Normal Mode Vibrancy */
+body:not(.dark-mode):not(.glow-mode) .ball-inner {
+    filter: brightness(1.1);
+}
+/* Dark Mode Vibrancy */
+body.dark-mode:not(.glow-mode) .ball-inner {
+    filter: brightness(0.7) brightness(1.1);
+}
+/* Glow Mode: No hue-shifting brightness filter. We use INSET SHADOWS in JS for brightness. */
+body.glow-mode .ball-inner {
+    filter: none;
+}
+/* Glow Mode: Lemons still get dark */
+body.glow-mode .is-lemon .ball-inner {
+    filter: brightness(0.7); 
+}
+
+/* --- 3D Texture (Standard) --- */
+/* Applies to ALL modes, including Glow */
 .ball.is-3d::before {
 content: '';
 position: absolute;
@@ -52,6 +70,7 @@ background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.7) 0%, rgba(25
 z-index: 1;
 transition: background 0.3s ease;
 }
+
 .trail.is-3d::before {
 content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 50%;
 background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 15%, transparent 40%, rgba(0,0,0,0.5) 100%);
@@ -121,7 +140,7 @@ button:hover { background-color: #45a049; }
 .warning-btn:hover { background-color: #FBC02D; }
 
 /* --- Menu Header Buttons --- */
-#fullscreen-btn, #gyro-btn, #pause-btn, #no-walls-btn, #dark-mode-btn, #slow-mo-btn {
+#fullscreen-btn, #gyro-btn, #pause-btn, #no-walls-btn, #dark-mode-btn {
     width: 36px;
     height: 36px;
     padding: 6px;
@@ -138,7 +157,7 @@ button:hover { background-color: #45a049; }
     font-size: 11px;
 }
 #fullscreen-btn { margin-left: 0; } /* First button has no margin */
-#fullscreen-btn:hover, #gyro-btn:hover, #pause-btn:hover, #no-walls-btn:hover, #dark-mode-btn:hover, #slow-mo-btn:hover {
+#fullscreen-btn:hover, #gyro-btn:not(.disabled):hover, #pause-btn:hover, #no-walls-btn:hover, #dark-mode-btn:hover {
     background-color: rgba(255, 255, 255, 0.3);
 }
 #gyro-btn.disabled {
@@ -172,19 +191,6 @@ body.dark-mode {
 }
 body.dark-mode .ball-inner {
     border-color: #f0f0f0;
-    filter: brightness(0.7);
-}
-body.glow-mode .ball-inner {
-    filter: brightness(1.0); /* Glowing balls are full brightness */
-}
-body.glow-mode .is-lemon .ball-inner {
-    filter: brightness(0.7); /* Lemons in glow mode are dark */
-}
-body.dark-mode .ball.is-3d::before {
-    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 15%, transparent 40%, rgba(255,255,255,0.1) 100%);
-}
-body.dark-mode .trail.is-3d::before {
-    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 15%, transparent 40%, rgba(255,255,255,0.1) 100%);
 }
 body.dark-mode .menu-header button.active {
     background: radial-gradient(circle, #0b7dda, #0d47a1);
@@ -276,9 +282,6 @@ padding: 0 10px;
                 <circle cx="7" cy="12" r="2"></circle>
             </svg>
         </button>
-        <button id="slow-mo-btn" title="Cycle Speed">
-            <span id="speed-text">1x</span>
-        </button>
         <button id="pause-btn" title="Pause Simulation">
             <svg id="pause-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="6" y="4" width="4" height="16"></rect>
@@ -326,8 +329,8 @@ padding: 0 10px;
 <div id="editor-content-wrapper">
 <div id="global-settings-editor" class="tab-content active">
 <div class="input-container"> Size: <span id="tamanho-num"></span> <div class="slider-row"><button class="reset-btn">R</button><input id="tamanho" type="range" min="10" max="200" step="1"><input id="tamanho-input" type="number" min="10" max="200" step="1"></div> </div>
-<div class="input-container"> Gravity: <span id="gravidade-num"></span> <div class="slider-row" id="gravidade-slider-row"><button class="reset-btn">R</button><input id="gravidade" type="range" min="-10" max="10" step="0.01"><input id="gravidade-input" type="number" min="-10" max="10" step="0.01"><button class="zero-btn">0</button></div> </div>
 <div class="input-container"> Wind: <span id="vento-num"></span> <div class="slider-row" id="vento-slider-row"><button class="reset-btn">R</button><input id="vento" type="range" min="-10" max="10" step="0.01"><input id="vento-input" type="number" min="-10" max="10" step="0.01"></div> </div>
+<div class="input-container"> Gravity: <span id="gravidade-num"></span> <div class="slider-row" id="gravidade-slider-row"><button class="reset-btn">R</button><input id="gravidade" type="range" min="-10" max="10" step="0.01"><input id="gravidade-input" type="number" min="-10" max="10" step="0.01"><button class="zero-btn">0</button></div> </div>
 <div class="input-container"> Wall Elasticity: <span id="elasticidade-num"></span> <div class="slider-row"><button class="reset-btn">R</button><input id="elasticidade" type="range" min="0" max="1" step="0.01"><input id="elasticidade-input" type="number" min="0" max="1" step="0.01"><button class="zero-btn">0</button></div> </div>
 <div class="input-container"> Collision Bounciness: <span id="restitution-num"></span> <div class="slider-row"><button class="reset-btn">R</button><input id="restitution" type="range" min="0" max="1" step="0.01"><input id="restitution-input" type="number" min="0" max="1" step="0.01"><button class="zero-btn">0</button></div> </div>
 <div class="divider"></div>
@@ -382,7 +385,7 @@ let particles = [];
 let deletedBolasStack = [];
 let draggedBall = null;
 let trailsEnabled = false;
-let changeColorOnBounce = false; // Set to false by default
+let changeColorOnBounce = false;
 let animationsEnabled = true;
 let extraSquishy = false;
 let allRainbows = false;
@@ -397,8 +400,6 @@ let isNoWallsActive = false;
 let preNoWallsGravity = 0;
 let preNoWallsWind = 0;
 let darkModeState = 0; // 0: Light, 1: Dark, 2: Glow
-const speedMultipliers = [1, 0.5, 0.25, 0.1];
-let currentSpeedIndex = 0;
 
 let soundEnabled = true;
 let useLemonSounds = true;
@@ -421,13 +422,37 @@ const MAX_SQUISH_VELOCITY = 10;
 const MAX_SQUISH_RATIO = 1.19;
 const DEFAULT_COLORS = ["#FF0000", "#FFA500", "#FFFF00", "#00FF00", "#0000FF", "#4B0082", "#EE82EE"];
 const EXTRA_COLORS = ["#FF69B4", "#00BFFF", "#32CD32", "#FF4500", "#9400D3", "#FFD700"];
-const PALETTE_COLORS = [...DEFAULT_COLORS, ...EXTRA_COLORS];
+const PALETTE_COLORS = ["#FFFFFF", "#000000", ...DEFAULT_COLORS, ...EXTRA_COLORS];
+const LUMINANCE_THRESHOLD = 0.0214; // Pre-calculated lightness for #1a1a1a
 
 const world = document.getElementById("world");
 
 // --- UTILITY FUNCTIONS ---
 const random = (min, max) => Math.random() * (max - min) + min;
 const getRandomColor = () => DEFAULT_COLORS[Math.floor(Math.random() * DEFAULT_COLORS.length)];
+
+function getLightness(color) {
+    let r = 0, g = 0, b = 0;
+    
+    const tempEl = document.createElement('div');
+    tempEl.style.color = color;
+    tempEl.style.display = 'none';
+    document.body.appendChild(tempEl);
+    const computedColor = window.getComputedStyle(tempEl).color;
+    document.body.removeChild(tempEl);
+    
+    const parts = computedColor.match(/[\d.]+/g);
+    if (parts && parts.length >= 3) {
+        [r, g, b] = parts.map(v => v / 255);
+    } else {
+        return 0;
+    }
+
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    return (max + min) / 2;
+}
+
 const getBallProperty = (ball, prop) => {
 if (ball.isLemon) {
 if (prop === 'elasticidade') return 0.5;
@@ -542,11 +567,36 @@ undoBtn.classList.add('button-hidden');
 // --- GYROSCOPE FUNCTIONS ---
 function handleOrientation(event) {
     if (!gyroActive) return;
+
+    let { beta, gamma } = event;
+    // Disable if null (no sensor data)
+    if (beta === null || gamma === null) return;
+
+    let newGravidade, newVento;
     const maxForce = 5;
-    const gamma = event.gamma; // side to side [-90, 90]
-    const beta = event.beta; // front to back [-180, 180]
-    let newVento = (Math.max(-90, Math.min(90, gamma)) / 90) * maxForce;
-    let newGravidade = (Math.max(-90, Math.min(90, beta)) / 90) * maxForce;
+    
+    const orientation = screen.orientation.angle;
+    switch (orientation) {
+        case 90: // Landscape, rotated left
+            newVento = (Math.max(-90, Math.min(90, beta)) / 90) * maxForce;
+            newGravidade = -(Math.max(-90, Math.min(90, gamma)) / 90) * maxForce;
+            break;
+        case -90:
+        case 270: // Landscape, rotated right
+            newVento = -(Math.max(-90, Math.min(90, beta)) / 90) * maxForce;
+            newGravidade = (Math.max(-90, Math.min(90, gamma)) / 90) * maxForce;
+            break;
+        case 180: // Portrait, upside down
+            newVento = -(Math.max(-90, Math.min(90, gamma)) / 90) * maxForce;
+            newGravidade = -(Math.max(-90, Math.min(90, beta)) / 90) * maxForce;
+            break;
+        case 0: 
+        default: // Portrait, default
+            newVento = (Math.max(-90, Math.min(90, gamma)) / 90) * maxForce;
+            newGravidade = (Math.max(-90, Math.min(90, beta)) / 90) * maxForce;
+            break;
+    }
+
     settings.vento = newVento;
     settings.gravidade = newGravidade;
     syncUIToSettings();
@@ -598,8 +648,7 @@ async function toggleGyro() {
 
 // --- CORE PHYSICS & ANIMATION ---
 function squishBall(ball, impactVelocity, angleDeg = 0) {
-    const currentSpeed = speedMultipliers[currentSpeedIndex];
-    const timeout = (extraSquishy ? 50 : 30) / currentSpeed;
+    const timeout = (extraSquishy ? 50 : 30);
     const squishFactor = Math.min(Math.abs(impactVelocity) / MAX_SQUISH_VELOCITY, 1);
     const stretch = 1 + (MAX_SQUISH_RATIO - 1) * squishFactor;
     const squash = 1 / stretch;
@@ -608,7 +657,7 @@ function squishBall(ball, impactVelocity, angleDeg = 0) {
     const scaleX = isHorizontal ? squash : stretch;
     const scaleY = isHorizontal ? stretch : squash;
 
-    ball.elm.style.transitionDuration = `${(extraSquishy ? 0.05 : 0.03) / currentSpeed}s`;
+    ball.elm.style.transitionDuration = `${(extraSquishy ? 0.05 : 0.03)}s`;
     ball.elm.style.transform = `scaleX(${scaleX}) scaleY(${scaleY})`;
 
     setTimeout(() => {
@@ -734,7 +783,6 @@ ball2.velocidadeY = ty * dpTan2 + ny * m2 * avgRestitution;
 }
 
 function createExplosion(x, y, explodingBall) {
-    const currentSpeed = speedMultipliers[currentSpeedIndex];
     playExplodeSound();
     applyExplosionForce(x, y, explodingBall);
 
@@ -744,13 +792,13 @@ function createExplosion(x, y, explodingBall) {
     flash.style.top = `${window.innerHeight - y - 200}px`;
     flash.style.width = '400px';
     flash.style.height = '400px';
-    flash.style.transitionDuration = `${0.2 / currentSpeed}s`;
+    flash.style.transitionDuration = `0.2s`;
     flash.style.transitionTimingFunction = 'ease-out';
     world.appendChild(flash);
     
-    setTimeout(() => { flash.style.opacity = '0.8'; flash.style.transform = 'scale(1.5)'; }, 10 / currentSpeed);
-    setTimeout(() => { flash.style.opacity = '0'; }, 100 / currentSpeed);
-    setTimeout(() => world.removeChild(flash), 300 / currentSpeed);
+    setTimeout(() => { flash.style.opacity = '0.8'; flash.style.transform = 'scale(1.5)'; }, 10);
+    setTimeout(() => { flash.style.opacity = '0'; }, 100);
+    setTimeout(() => { if (flash.parentElement) world.removeChild(flash) }, 300);
 
     for (let i = 0; i < 50; i++) {
         const particleElm = document.createElement('div');
@@ -793,18 +841,20 @@ otherBall.velocidadeY += ny * force * explosionPower;
 }
 
 function runPhysics() {
-    const currentSpeed = speedMultipliers[currentSpeedIndex];
     bolas.forEach(l => {
         if (l.toBeDeleted) return;
         if (l !== draggedBall) {
             // Apply forces to the true velocity
             l.velocidadeY -= getBallProperty(l, "gravidade");
             l.velocidadeX += getBallProperty(l, "vento");
+            
+            // Apply damping
             l.velocidadeX *= .99;
             l.velocidadeY *= .99;
-            // Apply speed multiplier only when updating position
-            l.x += l.velocidadeX * currentSpeed;
-            l.y += l.velocidadeY * currentSpeed;
+            
+            // Update position based on true velocity
+            l.x += l.velocidadeX;
+            l.y += l.velocidadeY;
         }
     });
 
@@ -815,18 +865,22 @@ const t = getBallProperty(l, "tamanho") / 2, e = getBallProperty(l, "elasticidad
 let o = 0;
 let explode = false;
 const useAnimations = getBallAnimationStatus(l);
+const realSpeedThreshold = 40;
 
 if (isNoWallsActive) {
-    const totalWidth = window.innerWidth + 2 * t;
-    const totalHeight = window.innerHeight + 2 * t;
-    l.x = (l.x + t + totalWidth) % totalWidth - t;
-    l.y = (l.y + t + totalHeight) % totalHeight - t;
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    // Simple REVERTED teleport logic: Ball must be fully off screen before wrapping
+    if (l.x > screenWidth + t) l.x = -t;
+    else if (l.x < -t) l.x = screenWidth + t;
+    if (l.y > screenHeight + t) l.y = -t;
+    else if (l.y < -t) l.y = screenHeight + t;
 } else {
-    if (l.x + t > window.innerWidth) { o = l.velocidadeX; l.x = window.innerWidth - t; if (l.isLemon && Math.abs(o) > 40) explode = true; else { animationsEnabled && useAnimations && squishBall(l, o, 90); l.velocidadeX *= -e; if (Math.abs(o) > 4) playBounceSound(l, Math.abs(o) / 20); } }
-    else if (l.x - t < 0) { o = l.velocidadeX; l.x = t; if (l.isLemon && Math.abs(o) > 40) explode = true; else { animationsEnabled && useAnimations && squishBall(l, o, 90); l.velocidadeX *= -e; if (Math.abs(o) > 4) playBounceSound(l, Math.abs(o) / 20); } }
+    if (l.x + t > window.innerWidth) { o = l.velocidadeX; l.x = window.innerWidth - t; if (l.isLemon && Math.abs(o) > realSpeedThreshold) explode = true; else { animationsEnabled && useAnimations && squishBall(l, o, 90); l.velocidadeX *= -e; if (Math.abs(o) > 4) playBounceSound(l, Math.abs(o) / 20); } }
+    else if (l.x - t < 0) { o = l.velocidadeX; l.x = t; if (l.isLemon && Math.abs(o) > realSpeedThreshold) explode = true; else { animationsEnabled && useAnimations && squishBall(l, o, 90); l.velocidadeX *= -e; if (Math.abs(o) > 4) playBounceSound(l, Math.abs(o) / 20); } }
 
-    if (l.y + t > window.innerHeight) { o = l.velocidadeY; l.y = window.innerHeight - t; if (l.isLemon && Math.abs(o) > 40) explode = true; else { animationsEnabled && useAnimations && squishBall(l, o, 0); l.velocidadeY *= -e; if (Math.abs(o) > 4) playBounceSound(l, Math.abs(o) / 20); } }
-    else if (l.y - t < 0) { o = l.velocidadeY; l.y = t; if (l.isLemon && Math.abs(o) > 40) explode = true; else { animationsEnabled && useAnimations && squishBall(l, o, 0), l.velocidadeY *= -e; if (Math.abs(o) > 4) playBounceSound(l, Math.abs(o) / 20); } }
+    if (l.y + t > window.innerHeight) { o = l.velocidadeY; l.y = window.innerHeight - t; if (l.isLemon && Math.abs(o) > realSpeedThreshold) explode = true; else { animationsEnabled && useAnimations && squishBall(l, o, 0); l.velocidadeY *= -e; if (Math.abs(o) > 4) playBounceSound(l, Math.abs(o) / 20); } }
+    else if (l.y - t < 0) { o = l.velocidadeY; l.y = t; if (l.isLemon && Math.abs(o) > realSpeedThreshold) explode = true; else { animationsEnabled && useAnimations && squishBall(l, o, 0), l.velocidadeY *= -e; if (Math.abs(o) > 4) playBounceSound(l, Math.abs(o) / 20); } }
 }
 
 if (explode) {
@@ -850,18 +904,17 @@ resolveCollision(bolas[i], bolas[j]);
 const lemonsToDelete = bolas.filter(b => b.toBeDeleted);
 if (lemonsToDelete.length > 0) {
 lemonsToDelete.forEach(b => world.removeChild(b.elm));
-bolas = bolas.filter(b => !b.toBeDeleted);
+bolas = bolas.filter(b => !b.Deleted);
 }
 }
 
 function updateParticles() {
-    const currentSpeed = speedMultipliers[currentSpeedIndex];
     for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.vy -= settings.gravidade * 0.5;
-        p.x += p.vx * currentSpeed;
-        p.y += p.vy * currentSpeed;
-        p.lifetime -= 1 * currentSpeed; // Lifetime should also be affected by speed
+        p.x += p.vx;
+        p.y += p.vy;
+        p.lifetime -= 1;
         p.elm.style.opacity = p.lifetime / 100;
         p.elm.style.left = `${p.x}px`;
         p.elm.style.top = `${window.innerHeight - p.y}px`;
@@ -874,9 +927,22 @@ function updateParticles() {
 }
 
 function renderVisuals() {
-    const currentSpeed = speedMultipliers[currentSpeedIndex];
     const isGlowMode = darkModeState === 2;
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+
     bolas.forEach(l => {
+        if (isNoWallsActive) {
+            // Simple teleport logic needs no extra visual rendering handling
+        }
+
+        // Explicitly handle is-lemon class every frame to fix "sticky" lemon state
+        if (l.isLemon) {
+            l.elm.classList.add("is-lemon");
+        } else {
+            l.elm.classList.remove("is-lemon");
+        }
+
         const t = getBallProperty(l, "tamanho"),
             e = getBallUltraGraphicsStatus(l),
             a = getBallTrailsStatus(l);
@@ -888,54 +954,66 @@ function renderVisuals() {
             trailElm.style.width = trailElm.style.height = `${getBallProperty(l,"tamanho")}px`;
             trailElm.style.left = `${l.x-getBallProperty(l,"tamanho")/2}px`;
             trailElm.style.top = `${window.innerHeight-l.y-getBallProperty(l,"tamanho")/2}px`;
-            trailElm.style.transitionDuration = `${0.5 / currentSpeed}s`;
+            trailElm.style.transitionDuration = `0.5s`;
             trailElm.style.transitionTimingFunction = 'ease-out';
             world.appendChild(trailElm);
             setTimeout(() => {
                 trailElm.style.transform = "scale(0)";
                 trailElm.style.opacity = "0";
-                setTimeout(() => world.removeChild(trailElm), 500 / currentSpeed);
-            }, 10 / currentSpeed);
+                setTimeout(() => { if (trailElm.parentElement) world.removeChild(trailElm) }, 500);
+            }, 10);
         }
         if (l.isRainbow && !l.isLemon) {
             l.hue = (l.hue + 1) % 360;
             l.innerElm.style.backgroundColor = `hsl(${l.hue}, 100%, 50%)`;
         }
         
-        if (isGlowMode && !l.isLemon) {
-            const glowColor = l.innerElm.style.backgroundColor;
-            const rgbValues = glowColor.match(/\d+/g);
+        const lightness = getLightness(l.innerElm.style.backgroundColor);
+        let dynamicShadows = [];
+
+        if (isGlowMode && !l.isLemon && lightness > LUMINANCE_THRESHOLD) {
+            const glowIntensity = 0.5 + (0.5 * Math.pow(Math.max(0, (lightness - LUMINANCE_THRESHOLD) / (1 - LUMINANCE_THRESHOLD)), 0.5));
+            const rgbValues = l.innerElm.style.backgroundColor.match(/\d+/g);
             if (rgbValues && rgbValues.length >= 3) {
-                 l.innerElm.style.boxShadow = `0 0 10px 3px rgba(${rgbValues[0]},${rgbValues[1]},${rgbValues[2]},1), 0 0 25px 10px rgba(${rgbValues[0]},${rgbValues[1]},${rgbValues[2]},0.4)`;
+                 // INCREASED GLOW RADIUS AND ADDED INSET SHADOW
+                 const baseRadius = 40 * glowIntensity;
+                 const outerRadius = 100 * glowIntensity;
+                 dynamicShadows.push(
+                     `inset 0 0 20px rgba(255,255,255,0.5)`, // Fake brightness using inset
+                     `0 0 ${baseRadius}px ${baseRadius/3}px rgba(${rgbValues[0]},${rgbValues[1]},${rgbValues[2]},0.9)`, 
+                     `0 0 ${outerRadius}px ${outerRadius/3}px rgba(${rgbValues[0]},${rgbValues[1]},${rgbValues[2]},0.35)`
+                 );
             }
-        } else {
-            l.innerElm.style.boxShadow = 'none';
         }
         
         if (e) {
             l.elm.classList.add("is-3d");
-            if (l.isLemon) l.elm.classList.add("is-lemon"); // Add class for specific styling
+            // Remove is-lemon add here since we do it explicitly above
             l.innerElm.style.border = "none";
             const heightRatio = Math.max(0, l.y / 1.2 / window.innerHeight);
             const blur = 5 + 30 * heightRatio;
             const spread = 2 + 10 * heightRatio;
             const offsetY = 5 + 80 * heightRatio;
             
-            let shadowColor;
-            if (isGlowMode && !l.isLemon) {
-                shadowColor = 'transparent';
+            let shadowOpacity = 0;
+            if (isGlowMode) {
+                 if (lightness <= LUMINANCE_THRESHOLD || l.isLemon) {
+                    shadowOpacity = (1 - (lightness / LUMINANCE_THRESHOLD)) * 0.5;
+                }
             } else if (darkModeState > 0) {
-                shadowColor = `rgba(0,0,0,0.5)`;
+                shadowOpacity = 0.5;
             } else {
-                shadowColor = `rgba(0,0,0,${Math.max(0,.6-.5*heightRatio)})`;
+                shadowOpacity = Math.max(0,.6-.5*heightRatio);
             }
-            l.elm.style.boxShadow = `0px ${offsetY}px ${blur}px ${spread}px ${shadowColor}`;
+            if (shadowOpacity > 0) {
+                dynamicShadows.push(`0px ${offsetY}px ${blur}px ${spread}px rgba(0,0,0,${shadowOpacity})`);
+            }
         } else {
              l.elm.classList.remove("is-3d");
-             if (l.isLemon) l.elm.classList.remove("is-lemon");
              l.innerElm.style.border = "solid 5px";
-             l.elm.style.boxShadow = "none";
         }
+
+        l.elm.style.boxShadow = dynamicShadows.join(', ');
         
         l.elm.style.width = `${t}px`, l.elm.style.height = `${t}px`, l.elm.style.top = `${window.innerHeight-l.y-t/2}px`, l.elm.style.left = `${l.x-t/2}px`, l.highlightElm && (l.highlightElm.style.top = `${window.innerHeight-l.y-t/2-3}px`, l.highlightElm.style.left = `${l.x-t/2-3}px`, l.highlightElm.style.width = `${t}px`, l.highlightElm.style.height = `${t}px`);
     })
@@ -987,9 +1065,8 @@ document.getElementById(`${key}-num-s`).textContent = val.toFixed(key === 'taman
 }
 
 function applyColorToBall(color, ball) {
-if (ball.isLemon) return;
-ball.isLemon = false;
-ball.elm.classList.remove('is-lemon');
+ball.isLemon = false; // FORCE LEMON OFF
+ball.elm.classList.remove('is-lemon'); // REMOVE CLASS
 ball.isRainbow = false;
 ball.innerElm.style.backgroundColor = color;
 ball.changeColorOnBounceEnabled = false;
@@ -1075,7 +1152,6 @@ function setupEditor() {
         colorGridGlobal.appendChild(swatchGlobal);
     });
 
-    // --- BUG FIX: Handle custom color input ---
     const hexInputSelected = document.getElementById("hex-input-selected");
     const applySelectedColorFromInput = (value) => {
         if (selectedBall && /^#([0-9A-F]{3}){1,2}$/i.test(value)) {
@@ -1107,7 +1183,6 @@ function setupEditor() {
             applyGlobalColorFromInput(e.target.value);
         }
     });
-    // --- END BUG FIX ---
 
     document.getElementById('ball-ultra-graphics-toggle').addEventListener('change', t => { if (selectedBall) selectedBall.ultraGraphicsEnabled = t.target.checked });
     document.getElementById("rainbow-toggle").addEventListener("change", t => { if (selectedBall) { selectedBall.isRainbow = t.target.checked; updateEditorUI(); } });
@@ -1169,15 +1244,6 @@ document.addEventListener('fullscreenchange', updateFullscreenIcon);
 // --- End Fullscreen Logic ---
 
 // --- NEW BUTTONS LOGIC ---
-// Slow Motion Button
-const slowMoBtn = document.getElementById('slow-mo-btn');
-const speedText = document.getElementById('speed-text');
-slowMoBtn.addEventListener('click', () => {
-    currentSpeedIndex = (currentSpeedIndex + 1) % speedMultipliers.length;
-    const newSpeed = speedMultipliers[currentSpeedIndex];
-    speedText.textContent = `${newSpeed}x`;
-    slowMoBtn.classList.toggle('active', newSpeed !== 1);
-});
 
 // Pause/Play Button
 const pauseBtn = document.getElementById('pause-btn');
@@ -1219,7 +1285,7 @@ noWallsBtn.addEventListener('click', () => {
 // 3-State Dark Mode Button
 const darkModeBtn = document.getElementById('dark-mode-btn');
 darkModeBtn.addEventListener('click', () => {
-    darkModeState = (darkModeState + 1) % 3; // Cycle 0, 1, 2
+    darkModeState = (darkModeState + 1) % 3;
     const bodyClassList = document.body.classList;
     
     bodyClassList.remove('dark-mode', 'glow-mode');
@@ -1239,21 +1305,37 @@ const setupSlider=(key,isSingle)=>{const suffix=isSingle?"-s":"",slider=document
 
 // --- Gyroscope Setup ---
 const gyroBtn = document.getElementById('gyro-btn');
+let gyroListenerAdded = false;
+
+const checkGyro = (e) => {
+    if (e.alpha !== null || e.beta !== null || e.gamma !== null) {
+        // Valid data received
+        gyroBtn.classList.remove('disabled');
+        gyroBtn.addEventListener('click', toggleGyro);
+    }
+    // Remove this one-time check listener
+    window.removeEventListener('deviceorientation', checkGyro);
+    gyroListenerAdded = false;
+};
+
 if (window.DeviceOrientationEvent) {
-    gyroBtn.classList.remove('disabled');
-    gyroBtn.addEventListener('click', toggleGyro);
-} else {
-    let hoverTimeout;
-    gyroBtn.addEventListener('mouseenter', () => {
+    window.addEventListener('deviceorientation', checkGyro);
+    gyroListenerAdded = true;
+}
+
+// Tooltip logic for disabled button
+let hoverTimeout;
+gyroBtn.addEventListener('mouseenter', () => {
+    if (gyroBtn.classList.contains('disabled')) {
         hoverTimeout = setTimeout(() => {
             gyroBtn.title = "Your device doesn't support gyroscope controls.";
         }, 1000);
-    });
-    gyroBtn.addEventListener('mouseleave', () => {
-        clearTimeout(hoverTimeout);
-        gyroBtn.title = "";
-    });
-}
+    }
+});
+gyroBtn.addEventListener('mouseleave', () => {
+    clearTimeout(hoverTimeout);
+    gyroBtn.title = "";
+});
 
 syncUIToSettings(),setupEditor();updateFullscreenIcon();for(let i=0;i<3;i++)createBall();gameLoop()
 }
