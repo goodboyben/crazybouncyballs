@@ -640,10 +640,25 @@ function resolveCollision(ball1, ball2) {
     const b2Size = getBallProperty(ball2, 'tamanho');
     const totalRadius = (b1Size + b2Size) / 2;
 
-    const dx = ball2.x - ball1.x;
-    const dy = ball2.y - ball1.y;
+        let dx = ball2.x - ball1.x;
+    let dy = ball2.y - ball1.y;
+
+    // Fix for No Walls Mode: calculate shortest distance across boundaries
+    if (isNoWallsActive) {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        
+        if (Math.abs(dx) > w / 2) {
+            dx = dx > 0 ? dx - w : dx + w;
+        }
+        if (Math.abs(dy) > h / 2) {
+            dy = dy > 0 ? dy - h : dy + h;
+        }
+    }
+
     let distance = Math.sqrt(dx * dx + dy * dy);
     if (distance === 0) { distance = 0.1; ball1.x += 0.1; }
+
 
     if (distance < totalRadius) {
         const nx = dx / distance;
