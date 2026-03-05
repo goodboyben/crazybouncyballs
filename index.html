@@ -508,59 +508,46 @@ function handleOrientation(event) {
     if (!gyroActive) return;
     let { beta, gamma } = event;
     if (beta === null || gamma === null) return;
+
+    // Set the maximum gravitational force to 2.00.
+    const maxForce = 2.00; 
+
+    // Constrain the values to avoid device flipping anomalies.
+    beta = Math.max(-90, Math.min(90, beta));
+    gamma = Math.max(-90, Math.min(90, gamma));
+
+    // Convert degrees to radians for trigonometric calculation.
+    const radBeta = beta * (Math.PI / 180);
+    const radGamma = gamma * (Math.PI / 180);
+
     let newGravidade, newVento;
-    const maxForce = 5;
     const orientation = screen.orientation ? screen.orientation.angle : 0;
+
+    // Use Math.sin() to accurately calculate the physics of a ball on an inclined plane.
     switch (orientation) {
-        case 90: newVento = (Math.max(-90, Math.min(90, beta)) / 90) * maxForce; newGravidade = -(Math.max(-90, Math.min(90, gamma)) / 90) * maxForce; break;
-        case -90: case 270: newVento = -(Math.max(-90, Math.min(90, beta)) / 90) * maxForce; newGravidade = (Math.max(-90, Math.min(90, gamma)) / 90) * maxForce; break;
-        case 180: newVento = -(Math.max(-90, Math.min(90, gamma)) / 90) * maxForce; newGravidade = -(Math.max(-90, Math.min(90, beta)) / 90) * maxForce; break;
-        case 0: default: newVento = (Math.max(-90, Math.min(90, gamma)) / 90) * maxForce; newGravidade = (Math.max(-90, Math.min(90, beta)) / 90) * maxForce; break;
+        case 90: 
+            newVento = Math.sin(radBeta) * maxForce; 
+            newGravidade = -Math.sin(radGamma) * maxForce; 
+            break;
+        case -90: 
+        case 270: 
+            newVento = -Math.sin(radBeta) * maxForce; 
+            newGravidade = Math.sin(radGamma) * maxForce; 
+            break;
+        case 180: 
+            newVento = -Math.sin(radGamma) * maxForce; 
+            newGravidade = -Math.sin(radBeta) * maxForce; 
+            break;
+        case 0: 
+        default: 
+            newVento = Math.sin(radGamma) * maxForce; 
+            newGravidade = Math.sin(radBeta) * maxForce; 
+            break;
     }
+
     settings.vento = newVento;
     settings.gravidade = newGravidade;
     syncUIToSettings();
-}
-
-async function toggleGyro() {
-    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-        const permission = await DeviceOrientationEvent.requestPermission();
-        if (permission !== 'granted') {
-            alert('Gyroscope permission was not granted.');
-            if (gyroActive) {
-                gyroActive = false; 
-                const gyroBtn = document.getElementById('gyro-btn');
-                gyroBtn.classList.remove('active');
-                window.removeEventListener('deviceorientation', handleOrientation, true);
-                document.getElementById('gravidade-slider-row').classList.remove('gyro-controls-disabled');
-                document.getElementById('vento-slider-row').classList.remove('gyro-controls-disabled');
-                settings.gravidade = preGyroSettings.gravidade;
-                settings.vento = preGyroSettings.vento;
-                syncUIToSettings();
-            }
-            return;
-        }
-    }
-    gyroActive = !gyroActive;
-    const gyroBtn = document.getElementById('gyro-btn');
-    const gravidadeSliderRow = document.getElementById('gravidade-slider-row');
-    const ventoSliderRow = document.getElementById('vento-slider-row');
-    if (gyroActive) {
-        gyroBtn.classList.add('active');
-        preGyroSettings.gravidade = settings.gravidade;
-        preGyroSettings.vento = settings.vento;
-        gravidadeSliderRow.classList.add('gyro-controls-disabled');
-        ventoSliderRow.classList.add('gyro-controls-disabled');
-        window.addEventListener('deviceorientation', handleOrientation, true);
-    } else {
-        gyroBtn.classList.remove('active');
-        window.removeEventListener('deviceorientation', handleOrientation, true);
-        gravidadeSliderRow.classList.remove('gyro-controls-disabled');
-        ventoSliderRow.classList.remove('gyro-controls-disabled');
-        settings.gravidade = preGyroSettings.gravidade;
-        settings.vento = preGyroSettings.vento;
-        syncUIToSettings();
-    }
 }
 
 
