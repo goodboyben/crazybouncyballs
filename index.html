@@ -550,6 +550,47 @@ function handleOrientation(event) {
     syncUIToSettings();
 }
 
+async function toggleGyro() {
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        const permission = await DeviceOrientationEvent.requestPermission();
+        if (permission !== 'granted') {
+            alert('Gyroscope permission was not granted.');
+            if (gyroActive) {
+                gyroActive = false; 
+                const gyroBtn = document.getElementById('gyro-btn');
+                gyroBtn.classList.remove('active');
+                window.removeEventListener('deviceorientation', handleOrientation, true);
+                document.getElementById('gravidade-slider-row').classList.remove('gyro-controls-disabled');
+                document.getElementById('vento-slider-row').classList.remove('gyro-controls-disabled');
+                settings.gravidade = preGyroSettings.gravidade;
+                settings.vento = preGyroSettings.vento;
+                syncUIToSettings();
+            }
+            return;
+        }
+    }
+    gyroActive = !gyroActive;
+    const gyroBtn = document.getElementById('gyro-btn');
+    const gravidadeSliderRow = document.getElementById('gravidade-slider-row');
+    const ventoSliderRow = document.getElementById('vento-slider-row');
+    if (gyroActive) {
+        gyroBtn.classList.add('active');
+        preGyroSettings.gravidade = settings.gravidade;
+        preGyroSettings.vento = settings.vento;
+        gravidadeSliderRow.classList.add('gyro-controls-disabled');
+        ventoSliderRow.classList.add('gyro-controls-disabled');
+        window.addEventListener('deviceorientation', handleOrientation, true);
+    } else {
+        gyroBtn.classList.remove('active');
+        window.removeEventListener('deviceorientation', handleOrientation, true);
+        gravidadeSliderRow.classList.remove('gyro-controls-disabled');
+        ventoSliderRow.classList.remove('gyro-controls-disabled');
+        settings.gravidade = preGyroSettings.gravidade;
+        settings.vento = preGyroSettings.vento;
+        syncUIToSettings();
+    }
+}
+
 
 // --- CORE PHYSICS & ANIMATION ---
 function squishBall(ball, impactVelocity, angleDeg = 0) {
