@@ -828,12 +828,11 @@ function runPhysics() {
         }
     }
 
-    // Apply forces
+// Apply forces
     bolas.forEach(l => {
         if (l !== draggedBall) {
-            // Introduce a microscopic random variance (±1%) to simulate real-world physical imperfections.
-            const varianceY = 1 + (Math.random() * 0.02 - 0.01);
-            const varianceX = 1 + (Math.random() * 0.02 - 0.01);
+            const varianceY = gyroActive ? 1 + (Math.random() * 0.002 - 0.001) : 1;
+            const varianceX = gyroActive ? 1 + (Math.random() * 0.002 - 0.001) : 1;
 
             l.velocidadeY -= getBallProperty(l, "gravidade") * varianceY;
             l.velocidadeX += getBallProperty(l, "vento") * varianceX;
