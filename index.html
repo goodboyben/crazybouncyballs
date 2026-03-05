@@ -424,8 +424,13 @@ const getBallProperty = (ball, prop) => {
     if (ball.isLemon) {
         if (prop === 'elasticidade') return 0.5;
         if (prop === 'restitution') return 1.0;
-        if (prop === 'gravidade') return defaultSettings.gravidade;
+        if (prop === 'gravidade') {
+            // Lemons are locked to default gravity (2.00) in all situations, 
+            // except when the gyroscope is active.
+            return gyroActive ? settings.gravidade : defaultSettings.gravidade;
+        }
     }
+    // Fallback for normal balls or other lemon properties.
     return (ball[prop] !== null && ball[prop] !== undefined) ? ball[prop] : settings[prop];
 };
 const getBallUltraGraphicsStatus = (ball) => ball.isLemon ? true : (ball.ultraGraphicsEnabled ?? ultraGraphicsEnabled);
