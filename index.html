@@ -790,8 +790,12 @@ function runPhysics() {
     // Apply forces
     bolas.forEach(l => {
         if (l !== draggedBall) {
-            l.velocidadeY -= getBallProperty(l, "gravidade");
-            l.velocidadeX += getBallProperty(l, "vento");
+            // Introduce a microscopic random variance (±1%) to simulate real-world physical imperfections.
+            const varianceY = 1 + (Math.random() * 0.02 - 0.01);
+            const varianceX = 1 + (Math.random() * 0.02 - 0.01);
+
+            l.velocidadeY -= getBallProperty(l, "gravidade") * varianceY;
+            l.velocidadeX += getBallProperty(l, "vento") * varianceX;
             l.velocidadeX *= .99;
             l.velocidadeY *= .99;
             l.x += l.velocidadeX;
