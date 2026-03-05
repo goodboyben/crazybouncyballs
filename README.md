@@ -1,4 +1,4 @@
-# Crazy Bouncy Balls
+# 🟢 Crazy Bouncy Balls
 
 A web-based physics sandbox that simulates elastic collisions and environmental forces. This project renders interactive objects directly in the DOM, allowing for real-time manipulation of physical properties and visual styles through a built-in editor.
 
