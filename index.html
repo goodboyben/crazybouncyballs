@@ -844,14 +844,111 @@ function runPhysics() {
             l.velocidadeX *= .99;
             l.velocidadeY *= .99;
             l.x += l.velocidadeX;
+function createExplosion(x, y, explodingBall) {
+    playExplodeSound();
+    applyExplosionForce(x, y, explodingBall);
+
+    const ballColor = explodingBall.innerElm.style.backgroundColor;
+    const targetY = window.innerHeight - y;
+
+    // Create an individual flash for every lemon using hardware acceleration.
+    const flash = document.createElement('div');
+    flash.className = 'flash';
+    flash.style.width = '400px';
+    flash.style.height = '400px';
+    
+    // Anchor to top-left and use translate3d to avoid layout reflows.
+    flash.style.left = '-200px';
+    flash.style.top = '-200px';
+    flash.style.transform = `translate3d(${x}px, ${targetY}px, 0) scale(0.5)`;
+    world.appendChild(flash);
+    
+    requestAnimationFrame(() => {
+        flash.style.transition = "opacity 0.15s ease-out, transform 0.15s ease-out"; 
+        flash.style.opacity = '0.8';
+        flash.style.transform = `translate3d(${x}px, ${targetY}px, 0) scale(1.5)`;
+        setTimeout(() => { flash.style.opacity = '0'; }, 50);
+        setTimeout(() => { if (flash.parentElement) world.removeChild(flash) }, 250);
+    });
+
+    // Dynamically scale particles to maintain FPS.
+    let particlesToCreate = 60;
+    if (particles.length > 150) particlesToCreate = 20;
+    if (particles.length > 300) particlesToCreate = 5;
+    if (particles.length > 400) particlesToCreate = 0;
+
+    for (let i = 0; i < particlesToCreate; i++) {
+        const particleElm = document.createElement('div');
+        particleElm.className = 'particle';
+        const size = random(3, 12);
+        particleElm.style.width = `${size}px`;
+        particleElm.style.height = `${size}px`;
+        particleElm.style.backgroundColor = ballColor; 
+        particleElm.style.boxShadow = `0 0 10px ${ballColor}`; 
+        
+        particleElm.style.left = '0px';
+        particleElm.style.top = '0px';
+
+        const angle = random(0, Math.PI * 2);
+        const speed = random(8, 25);
+        
+        const pObj = {
+            elm: particleElm, x: x, y: y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            lifetime: 60 + Math.random()*20,
+        };
+        
+        pObj.elm.style.transform = `translate3d(${pObj.x}px, ${window.innerHeight - pObj.y}px, 0)`;
+        particles.push(pObj);
+        world.appendChild(particleElm);
+    }
+}
+
+function applyExplosionForce(explosionX, explosionY, explodingBall) {
+    const explosionPower = 60;
+    const explosionRadius = 400;
+    bolas.forEach(otherBall => {
+        if (otherBall === explodingBall || otherBall.toBeDeleted) return;
+        const dx = otherBall.x - explosionX;
+        const dy = otherBall.y - explosionY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance < explosionRadius && distance > 0) {
+            const force = (1 - distance / explosionRadius);
+            const nx = dx / distance;
+            const ny = dy / distance;
+            otherBall.velocidadeX += nx * force * explosionPower;
+            otherBall.velocidadeY += ny * force * explosionPower;
+        }
+    });
+}
+
+function runPhysics() {
+    for (let i = bolas.length - 1; i >= 0; i--) {
+        if (bolas[i].toBeDeleted) {
+            if(bolas[i].elm.parentNode) world.removeChild(bolas[i].elm);
+            bolas[i].ghosts.forEach(g => { if(g.elm.parentNode) world.removeChild(g.elm); });
+            bolas.splice(i, 1);
+        }
+    }
+
+    bolas.forEach(l => {
+        if (l !== draggedBall) {
+            const varianceY = gyroActive ? 1 + (Math.random() * 0.002 - 0.001) : 1;
+            const varianceX = gyroActive ? 1 + (Math.random() * 0.002 - 0.001) : 1;
+
+            l.velocidadeY -= getBallProperty(l, "gravidade") * varianceY;
+            l.velocidadeX += getBallProperty(l, "vento") * varianceX;
+            l.velocidadeX *= .99;
+            l.velocidadeY *= .99;
+            l.x += l.velocidadeX;
             l.y += l.velocidadeY;
         }
     });
 
-    // Sub-steps for stability
     for (let k = 0; k < 3; k++) {
         bolas.forEach(l => {
-            if (l.toBeDeleted) return; // Skip deleted
+            if (l.toBeDeleted) return;
             
             const t = getBallProperty(l, "tamanho") / 2; 
             const e = getBallProperty(l, "elasticidade");
@@ -860,8 +957,6 @@ function runPhysics() {
             const useAnimations = getBallAnimationStatus(l);
 
             if (isNoWallsActive) {
-                // Seamless Wrapping Logic (Physics side)
-                // We just wrap coordinates. Visuals handle the ghost appearance.
                 const w = window.innerWidth;
                 const h = window.innerHeight;
                 if (l.x > w) l.x -= w;
@@ -869,7 +964,6 @@ function runPhysics() {
                 if (l.y > h) l.y -= h;
                 else if (l.y < 0) l.y += h;
             } else {
-                // Standard Bouncing
                 if (l.x + t > window.innerWidth) { o = l.velocidadeX; l.x = window.innerWidth - t; if (l.isLemon && Math.abs(o) > 40) explode = true; else { animationsEnabled && useAnimations && squishBall(l, o, 90); l.velocidadeX *= -e; if (Math.abs(o) > 4) playBounceSound(l, Math.abs(o) / 20); } }
                 else if (l.x - t < 0) { o = l.velocidadeX; l.x = t; if (l.isLemon && Math.abs(o) > 40) explode = true; else { animationsEnabled && useAnimations && squishBall(l, o, 90); l.velocidadeX *= -e; if (Math.abs(o) > 4) playBounceSound(l, Math.abs(o) / 20); } }
 
@@ -893,6 +987,27 @@ function runPhysics() {
                     resolveCollision(bolas[i], bolas[j]);
                 }
             }
+        }
+    }
+}
+
+function updateParticles() {
+    const h = window.innerHeight;
+    const grav = settings.gravidade * 0.5;
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.vy -= grav;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.lifetime -= 2; 
+        
+        if (p.lifetime <= 0) {
+            if (p.elm.parentElement) world.removeChild(p.elm);
+            particles.splice(i, 1);
+        } else {
+            p.elm.style.opacity = p.lifetime / 80;
+            p.elm.style.transform = `translate3d(${p.x}px, ${h - p.y}px, 0)`;
         }
     }
 }
