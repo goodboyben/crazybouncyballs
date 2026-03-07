@@ -1167,33 +1167,76 @@ let lastWinWTrack = window.innerWidth || 0;
 let lastWinHTrack = window.innerHeight || 0;
 let lastTime = performance.now();
 
+let lastWinW = window.innerWidth || 0;
+let lastWinH = window.innerHeight || 0;
+let lastWinX = window.screenX || 0;
+let lastWinY = window.screenY || 0;
+let lastTime = performance.now();
+
 function gameLoop() {
     if (!isPaused) {
         const now = performance.now();
         const dt = now - lastTime;
-        const curX = window.screenX || 0;
-        const curY = window.screenY || 0;
+        
         const curW = window.innerWidth || 0;
         const curH = window.innerHeight || 0;
-        
-        const dx = curX - lastScreenXTrack;
-        const dy = curY - lastScreenYTrack;
-        const dw = curW - lastWinWTrack;
-        const dh = curH - lastWinHTrack;
+        const curX = window.screenX || 0;
+        const curY = window.screenY || 0;
 
-        // Only apply drag momentum if the window was moved WITHOUT resizing.
-        if (dt < 100 && (dx !== 0 || dy !== 0) && dw === 0 && dh === 0) {
+        const dw = curW - lastWinW;
+        const dh = curH - lastWinH;
+        const dx = curX - lastWinX;
+        const dy = curY - lastWinY;
+
+        const isDragging = (dx !== 0 || dy !== 0) && dw === 0 && dh === 0;
+        const isMovingOrResizing = dx !== 0 || dy !== 0 || dw !== 0 || dh !== 0;
+
+        if (dt < 100 && isMovingOrResizing) {
             bolas.forEach(l => {
                 if (l.toBeDeleted || l === draggedBall) return;
-                l.velocidadeX -= Math.max(-30, Math.min(30, dx * 0.5));
-                l.velocidadeY += Math.max(-30, Math.min(30, dy * 0.5));
+                
+                const t = getBallProperty(l, "tamanho") / 2;
+
+                // 1. Global Anchor: Pin balls to the physical monitor space.
+                l.x -= dx;
+                l.y += dy + dh;
+
+                // 2. Drag Inertia: Add kinetic energy when shaking the whole window.
+                if (isDragging) {
+                    l.velocidadeX -= Math.max(-20, Math.min(20, dx * 0.2));
+                    l.velocidadeY += Math.max(-20, Math.min(20, dy * 0.2));
+                }
+
+                // 3. Wall Swatting (Only active if portal walls are disabled).
+                if (!isNoWallsActive) {
+                    // Left Wall Swat
+                    if (l.x - t <= 0) {
+                        l.x = t;
+                        if (dx > 0) l.velocidadeX += Math.abs(dx) * 0.5 + 5;
+                    }
+                    // Right Wall Swat
+                    if (l.x + t >= curW) {
+                        l.x = curW - t;
+                        if (dx + dw < 0) l.velocidadeX -= Math.abs(dx + dw) * 0.5 + 5;
+                    }
+                    // Bottom Floor Swat
+                    if (l.y - t <= 0) {
+                        l.y = t;
+                        if (dy + dh < 0) l.velocidadeY += Math.abs(dy + dh) * 0.5 + 5;
+                    }
+                    // Top Ceiling Swat
+                    if (l.y + t >= curH) {
+                        l.y = curH - t;
+                        if (dy > 0) l.velocidadeY -= Math.abs(dy) * 0.5 + 5;
+                    }
+                }
             });
         }
 
-        lastScreenXTrack = curX;
-        lastScreenYTrack = curY;
-        lastWinWTrack = curW;
-        lastWinHTrack = curH;
+        lastWinW = curW;
+        lastWinH = curH;
+        lastWinX = curX;
+        lastWinY = curY;
         lastTime = now;
 
         runPhysics();
@@ -1315,62 +1358,8 @@ function init() {
     const vh = window.innerHeight * 0.01;
     document.documentElement.style.setProperty('--vh', `${vh}px`);
     
-    // The || 0 prevents NaN crashes on mobile devices.
-    let lastWinW = window.innerWidth || 0;
-    let lastWinH = window.innerHeight || 0;
-    let lastWinScreenX = window.screenX || 0;
-    let lastWinScreenY = window.screenY || 0;
-
+    // The resize listener is now exclusively for maintaining mobile CSS scaling.
     window.addEventListener('resize', () => {
-        const curW = window.innerWidth || 0;
-        const curH = window.innerHeight || 0;
-        const curScreenX = window.screenX || 0;
-        const curScreenY = window.screenY || 0;
-
-        const diffW = curW - lastWinW;
-        const diffH = curH - lastWinH;
-        const diffScreenX = curScreenX - lastWinScreenX;
-        const diffScreenY = curScreenY - lastWinScreenY;
-
-        bolas.forEach(l => {
-            if (l.toBeDeleted || l === draggedBall) return;
-            const t = getBallProperty(l, "tamanho") / 2;
-
-            // Globally anchor the balls both horizontally and vertically.
-            l.x -= diffScreenX; 
-            l.y += diffScreenY + diffH; 
-
-            if (!isNoWallsActive) {
-                // Swat from Right Wall
-                if (l.x + t >= curW) {
-                    l.x = curW - t;
-                    if (diffW < 0) l.velocidadeX -= Math.abs(diffW) * 0.5 + 5;
-                }
-                // Swat from Left Wall (Triggered by dragging the left edge inward)
-                if (l.x - t <= 0) {
-                    l.x = t;
-                    if (diffScreenX > 0) l.velocidadeX += Math.abs(diffScreenX) * 0.5 + 5;
-                }
-
-                // Swat from Bottom Floor
-                if (l.y - t <= 0) {
-                    l.y = t;
-                    const fDelta = diffScreenY + diffH;
-                    if (fDelta < 0) l.velocidadeY += Math.abs(fDelta) * 0.5 + 5; 
-                } 
-                // Swat from Top Ceiling
-                else if (l.y + t >= curH) {
-                    l.y = curH - t;
-                    if (diffScreenY > 0) l.velocidadeY -= Math.abs(diffScreenY) * 0.5 + 5;
-                }
-            }
-        });
-
-        lastWinW = curW;
-        lastWinH = curH;
-        lastWinScreenX = curScreenX;
-        lastWinScreenY = curScreenY;
-
         const vh = window.innerHeight * 0.01;
         document.documentElement.style.setProperty('--vh', `${vh}px`);
     });
