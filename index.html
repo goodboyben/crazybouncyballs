@@ -516,24 +516,10 @@ function handleOrientation(event) {
     const orientation = screen.orientation ? screen.orientation.angle : 0;
 
     switch (orientation) {
-        case 90: 
-            newVento = Math.sin(radBeta) * maxForce; 
-            newGravidade = -Math.sin(radGamma) * maxForce; 
-            break;
-        case -90: 
-        case 270: 
-            newVento = -Math.sin(radBeta) * maxForce; 
-            newGravidade = Math.sin(radGamma) * maxForce; 
-            break;
-        case 180: 
-            newVento = -Math.sin(radGamma) * maxForce; 
-            newGravidade = -Math.sin(radBeta) * maxForce; 
-            break;
-        case 0: 
-        default: 
-            newVento = Math.sin(radGamma) * maxForce; 
-            newGravidade = Math.sin(radBeta) * maxForce; 
-            break;
+        case 90: newVento = Math.sin(radBeta) * maxForce; newGravidade = -Math.sin(radGamma) * maxForce; break;
+        case -90: case 270: newVento = -Math.sin(radBeta) * maxForce; newGravidade = Math.sin(radGamma) * maxForce; break;
+        case 180: newVento = -Math.sin(radGamma) * maxForce; newGravidade = -Math.sin(radBeta) * maxForce; break;
+        case 0: default: newVento = Math.sin(radGamma) * maxForce; newGravidade = Math.sin(radBeta) * maxForce; break;
     }
 
     settings.vento = newVento;
@@ -546,33 +532,16 @@ function handleMotion(event) {
     let acc = event.acceleration;
     if (!acc || acc.x === null) return;
 
-    const threshold = 1.5;
+    const threshold = 12.0; 
     const orientation = screen.orientation ? screen.orientation.angle : 0;
 
-    let ax = acc.x;
-    let ay = acc.y;
-    let forceX = 0;
-    let forceY = 0;
+    let ax = acc.x, ay = acc.y, forceX = 0, forceY = 0;
 
     switch (orientation) {
-        case 90:
-            forceX = ay;
-            forceY = -ax;
-            break;
-        case -90:
-        case 270:
-            forceX = -ay;
-            forceY = ax;
-            break;
-        case 180:
-            forceX = -ax;
-            forceY = -ay;
-            break;
-        case 0:
-        default:
-            forceX = ax;
-            forceY = ay;
-            break;
+        case 90: forceX = ay; forceY = -ax; break;
+        case -90: case 270: forceX = -ay; forceY = ax; break;
+        case 180: forceX = -ax; forceY = -ay; break;
+        case 0: default: forceX = ax; forceY = ay; break;
     }
 
     if (Math.abs(forceX) > threshold || Math.abs(forceY) > threshold) {
@@ -585,20 +554,14 @@ function handleMotion(event) {
 }
 
 async function toggleGyro() {
-    if (typeof window.DeviceOrientationEvent !== 'undefined' && typeof window.DeviceOrientationEvent.requestPermission === 'function') {
-        const permission = await window.DeviceOrientationEvent.requestPermission();
-        if (permission !== 'granted') {
-            alert('Gyroscope orientation permission was not granted.');
-            return;
-        }
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        const permission = await DeviceOrientationEvent.requestPermission();
+        if (permission !== 'granted') { alert('Gyroscope permission was not granted.'); return; }
     }
     
-    if (typeof window.DeviceMotionEvent !== 'undefined' && typeof window.DeviceMotionEvent.requestPermission === 'function') {
-        const motionPerm = await window.DeviceMotionEvent.requestPermission();
-        if (motionPerm !== 'granted') {
-            alert('Device motion permission was not granted.');
-            return;
-        }
+    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+        const motionPerm = await DeviceMotionEvent.requestPermission();
+        if (motionPerm !== 'granted') { alert('Device motion permission was not granted.'); return; }
     }
 
     gyroActive = !gyroActive;
@@ -631,6 +594,8 @@ async function toggleGyro() {
 
 // --- CORE PHYSICS & ANIMATION ---
 function squishBall(ball, impactVelocity, angleDeg = 0) {
+    if (Math.abs(impactVelocity) < 2.5) return; // Prevents resting memory leak
+
     const timeout = (extraSquishy ? 50 : 30);
     const squishFactor = Math.min(Math.abs(impactVelocity) / MAX_SQUISH_VELOCITY, 1);
     const stretch = 1 + (MAX_SQUISH_RATIO - 1) * squishFactor;
@@ -642,7 +607,6 @@ function squishBall(ball, impactVelocity, angleDeg = 0) {
     ball.elm.style.transform = `scaleX(${scaleX}) scaleY(${scaleY})`;
     setTimeout(() => { if (ball.elm) ball.elm.style.transform = 'none'; }, timeout);
 }
-
 function createBall() {
     const bolaElm = document.createElement("div");
     bolaElm.className = "ball";
@@ -1125,31 +1089,22 @@ function gameLoop() {
                 
                 const t = getBallProperty(l, "tamanho") / 2;
 
+                // Global Anchor
                 l.x -= dx;
                 l.y += dy + dh;
 
+                // Drag Inertia
                 if (isDragging) {
                     l.velocidadeX -= Math.max(-20, Math.min(20, dx * 0.2));
                     l.velocidadeY += Math.max(-20, Math.min(20, dy * 0.2));
                 }
 
+                // Wall Swatting
                 if (!isNoWallsActive) {
-                    if (l.x - t <= 0) {
-                        l.x = t;
-                        if (dx > 0) l.velocidadeX += Math.abs(dx) * 0.5 + 5;
-                    }
-                    if (l.x + t >= curW) {
-                        l.x = curW - t;
-                        if (dx + dw < 0) l.velocidadeX -= Math.abs(dx + dw) * 0.5 + 5;
-                    }
-                    if (l.y - t <= 0) {
-                        l.y = t;
-                        if (dy + dh < 0) l.velocidadeY += Math.abs(dy + dh) * 0.5 + 5;
-                    }
-                    if (l.y + t >= curH) {
-                        l.y = curH - t;
-                        if (dy > 0) l.velocidadeY -= Math.abs(dy) * 0.5 + 5;
-                    }
+                    if (l.x - t <= 0) { l.x = t; if (dx > 0) l.velocidadeX += Math.abs(dx) * 0.5 + 5; }
+                    if (l.x + t >= curW) { l.x = curW - t; if (dx + dw < 0) l.velocidadeX -= Math.abs(dx + dw) * 0.5 + 5; }
+                    if (l.y - t <= 0) { l.y = t; if (dy + dh < 0) l.velocidadeY += Math.abs(dy + dh) * 0.5 + 5; }
+                    if (l.y + t >= curH) { l.y = curH - t; if (dy > 0) l.velocidadeY -= Math.abs(dy) * 0.5 + 5; }
                 }
             });
         }
