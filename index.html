@@ -1226,12 +1226,14 @@ function init() {
     let lastWinScreenX = window.screenX;
     let lastWinScreenY = window.screenY;
 
-    window.addEventListener('resize', () => {
+ window.addEventListener('resize', () => {
+        // Define the current window state
         const curW = window.innerWidth;
         const curH = window.innerHeight;
         const curScreenX = window.screenX;
         const curScreenY = window.screenY;
 
+        // Calculate deltas
         const diffW = curW - lastWinW;
         const diffH = curH - lastWinH;
         const diffScreenX = curScreenX - lastWinScreenX;
@@ -1241,10 +1243,9 @@ function init() {
             if (l.toBeDeleted || l === draggedBall) return;
             const t = getBallProperty(l, "tamanho") / 2;
 
-            // Only anchor vertically. Horizontal anchoring causes false dragging.
+            // Anchor vertically so the balls "drop" when the window expands downward.
             l.y = l.y + diffScreenY + diffH; 
 
-            // Only apply physical wall swatting if No Walls mode is OFF.
             if (!isNoWallsActive) {
                 // Swat from Right Wall
                 if (l.x + t >= curW) {
@@ -1271,6 +1272,7 @@ function init() {
             }
         });
 
+        // Update tracking variables for the next resize event
         lastWinW = curW;
         lastWinH = curH;
         lastWinScreenX = curScreenX;
@@ -1279,7 +1281,7 @@ function init() {
         const vh = window.innerHeight * 0.01;
         document.documentElement.style.setProperty('--vh', `${vh}px`);
     });
-
+   
     const audioCheckBounce = new Audio('bounce.mp3');
     audioCheckBounce.oncanplaythrough = () => { bounceSoundReady = true; for (let i = 0; i < BOUNCE_CHANNEL_COUNT; i++) bounceChannels.push(new Audio('bounce.mp3')); };
     audioCheckBounce.onerror = () => { bounceSoundReady = false; };
