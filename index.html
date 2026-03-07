@@ -1038,8 +1038,55 @@ function renderVisuals() {
     })
 }
 
+let lastScreenX = window.screenX;
+let lastScreenY = window.screenY;
+let lastWinWidth = window.innerWidth;
+let lastWinHeight = window.innerHeight;
+
 function gameLoop() {
     if (!isPaused) {
+        // --- WINDOW SHAKE & RESIZE PHYSICS ---
+        const currentScreenX = window.screenX;
+        const currentScreenY = window.screenY;
+        const currentWinWidth = window.innerWidth;
+        const currentWinHeight = window.innerHeight;
+
+        const screenDeltaX = currentScreenX - lastScreenX;
+        const screenDeltaY = currentScreenY - lastScreenY;
+        const resizeDeltaX = currentWinWidth - lastWinWidth;
+        const resizeDeltaY = currentWinHeight - lastWinHeight;
+
+        if (screenDeltaX !== 0 || screenDeltaY !== 0 || resizeDeltaX !== 0 || resizeDeltaY !== 0) {
+            bolas.forEach(l => {
+                if (l.toBeDeleted || l === draggedBall) return;
+                
+                // 1. Momentum from physically dragging and shaking the window
+                if (screenDeltaX !== 0) l.velocidadeX -= screenDeltaX * 0.8;
+                
+                // The engine's Y-axis is inverted (0 is the floor). 
+                // Moving the window down (positive screenDeltaY) pushes the balls up.
+                if (screenDeltaY !== 0) l.velocidadeY += screenDeltaY * 0.8; 
+
+                // 2. Momentum from crushing the window boundaries inward (Resizing)
+                const t = getBallProperty(l, "tamanho") / 2;
+                
+                // If the right wall moves left, push balls that are touching it
+                if (resizeDeltaX < 0 && l.x + t >= currentWinWidth - 10) {
+                    l.velocidadeX += resizeDeltaX * 0.8;
+                }
+                // If the ceiling crushes down, push balls that are touching it
+                if (resizeDeltaY < 0 && l.y + t >= currentWinHeight - 10) {
+                    l.velocidadeY += resizeDeltaY * 0.8;
+                }
+            });
+        }
+
+        lastScreenX = currentScreenX;
+        lastScreenY = currentScreenY;
+        lastWinWidth = currentWinWidth;
+        lastWinHeight = currentWinHeight;
+        // -------------------------------------
+
         runPhysics();
         updateParticles();
     }
