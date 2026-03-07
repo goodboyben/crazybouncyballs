@@ -1033,6 +1033,8 @@ function renderVisuals() {
 
 let lastScreenXTrack = window.screenX;
 let lastScreenYTrack = window.screenY;
+let lastWinWTrack = window.innerWidth;
+let lastWinHTrack = window.innerHeight;
 let lastTime = performance.now();
 
 function gameLoop() {
@@ -1041,11 +1043,16 @@ function gameLoop() {
         const dt = now - lastTime;
         const curX = window.screenX;
         const curY = window.screenY;
+        const curW = window.innerWidth;
+        const curH = window.innerHeight;
+        
         const dx = curX - lastScreenXTrack;
         const dy = curY - lastScreenYTrack;
+        const dw = curW - lastWinWTrack;
+        const dh = curH - lastWinHTrack;
 
-        // Apply drag momentum smoothly, but completely block massive jumps caused by OS pausing or fullscreen toggling.
-        if (dt < 100 && (dx !== 0 || dy !== 0)) {
+        // Only apply drag momentum if the window was moved WITHOUT resizing.
+        if (dt < 100 && (dx !== 0 || dy !== 0) && dw === 0 && dh === 0) {
             bolas.forEach(l => {
                 if (l.toBeDeleted || l === draggedBall) return;
                 l.velocidadeX -= Math.max(-30, Math.min(30, dx * 0.5));
@@ -1055,6 +1062,8 @@ function gameLoop() {
 
         lastScreenXTrack = curX;
         lastScreenYTrack = curY;
+        lastWinWTrack = curW;
+        lastWinHTrack = curH;
         lastTime = now;
 
         runPhysics();
@@ -1180,6 +1189,11 @@ function init() {
     let lastWinScreenX = window.screenX;
     let lastWinScreenY = window.screenY;
 
+   let lastWinW = window.innerWidth;
+    let lastWinH = window.innerHeight;
+    let lastWinScreenX = window.screenX;
+    let lastWinScreenY = window.screenY;
+
     window.addEventListener('resize', () => {
         const curW = window.innerWidth;
         const curH = window.innerHeight;
@@ -1195,31 +1209,44 @@ function init() {
             if (l.toBeDeleted || l === draggedBall) return;
             const t = getBallProperty(l, "tamanho") / 2;
 
-            // 1. Globally anchor balls to the physical monitor so the floor "drops away".
-            l.x = l.x - diffScreenX;
+            // Only anchor vertically. Horizontal anchoring causes false dragging.
             l.y = l.y + diffScreenY + diffH; 
 
-            const maxF = 50; // Cap to prevent extreme forces
+            // Only apply physical wall swatting if No Walls mode is OFF.
+            if (!isNoWallsActive) {
+                // Swat from Right Wall
+                if (l.x + t >= curW) {
+                    l.x = curW - t;
+                    if (diffW < 0) l.velocidadeX -= Math.abs(diffW) * 0.5 + 5;
+                }
+                // Swat from Left Wall
+                if (l.x - t <= 0) {
+                    l.x = t;
+                    if (diffScreenX > 0) l.velocidadeX += Math.abs(diffScreenX) * 0.5 + 5;
+                }
 
-            // 2. Swat balls inward immediately if boundaries crush them.
-            if (l.x - t < 0) {
-                l.x = t;
-                if (diffScreenX > 0) l.velocidadeX += Math.min(diffScreenX * 0.5, maxF);
-            } else if (l.x + t > curW) {
-                l.x = curW - t;
-                const rDelta = diffScreenX + diffW;
-                if (rDelta < 0) l.velocidadeX += Math.max(rDelta * 0.5, -maxF);
-            }
-
-            if (l.y - t < 0) {
-                l.y = t;
-                const fDelta = diffScreenY + diffH;
-                if (fDelta < 0) l.velocidadeY += Math.min(-fDelta * 0.5, maxF); 
-            } else if (l.y + t > curH) {
-                l.y = curH - t;
-                if (diffScreenY > 0) l.velocidadeY -= Math.min(diffScreenY * 0.5, maxF);
+                // Swat from Bottom Floor
+                if (l.y - t < 0) {
+                    l.y = t;
+                    const fDelta = diffScreenY + diffH;
+                    if (fDelta < 0) l.velocidadeY += Math.abs(fDelta) * 0.5 + 5; 
+                } 
+                // Swat from Top Ceiling
+                else if (l.y + t > curH) {
+                    l.y = curH - t;
+                    if (diffScreenY > 0) l.velocidadeY -= Math.abs(diffScreenY) * 0.5 + 5;
+                }
             }
         });
+
+        lastWinW = curW;
+        lastWinH = curH;
+        lastWinScreenX = curScreenX;
+        lastWinScreenY = curScreenY;
+
+        const vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+    });
 
         lastWinW = curW;
         lastWinH = curH;
