@@ -548,6 +548,100 @@ function handleOrientation(event) {
     syncUIToSettings();
 }
 
+function handleMotion(event) {
+    if (!gyroActive || isPaused) return;
+
+    // Isolate pure acceleration (excludes constant gravitational pull)
+    let acc = event.acceleration;
+    if (!acc || acc.x === null) return;
+
+    // Threshold ensures tiny hand vibrations do not jitter the balls
+    const threshold = 1.5;
+    const orientation = screen.orientation ? screen.orientation.angle : 0;
+
+    let ax = acc.x;
+    let ay = acc.y;
+    let forceX = 0;
+    let forceY = 0;
+
+    // Map the physical device acceleration to the screen's visual axes
+    switch (orientation) {
+        case 90:
+            forceX = ay;
+            forceY = -ax;
+            break;
+        case -90:
+        case 270:
+            forceX = -ay;
+            forceY = ax;
+            break;
+        case 180:
+            forceX = -ax;
+            forceY = -ay;
+            break;
+        case 0:
+        default:
+            forceX = ax;
+            forceY = ay;
+            break;
+    }
+
+    if (Math.abs(forceX) > threshold || Math.abs(forceY) > threshold) {
+        bolas.forEach(l => {
+            if (l.toBeDeleted || l === draggedBall) return;
+            
+            // Apply inverse kinetic force to simulate inertia against the shake
+            if (Math.abs(forceX) > threshold) l.velocidadeX -= forceX * 0.8;
+            if (Math.abs(forceY) > threshold) l.velocidadeY -= forceY * 0.8;
+        });
+    }
+}
+
+async function toggleGyro() {
+    // Request dual permissions for iOS 13+ devices
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        const permission = await DeviceOrientationEvent.requestPermission();
+        if (permission !== 'granted') {
+            alert('Gyroscope orientation permission was not granted.');
+            return;
+        }
+    }
+    
+    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+        const motionPerm = await DeviceMotionEvent.requestPermission();
+        if (motionPerm !== 'granted') {
+            alert('Device motion permission was not granted.');
+            return;
+        }
+    }
+
+    gyroActive = !gyroActive;
+    const gyroBtn = document.getElementById('gyro-btn');
+    const gravidadeSliderRow = document.getElementById('gravidade-slider-row');
+    const ventoSliderRow = document.getElementById('vento-slider-row');
+    
+    if (gyroActive) {
+        gyroBtn.classList.add('active');
+        preGyroSettings.gravidade = settings.gravidade;
+        preGyroSettings.vento = settings.vento;
+        gravidadeSliderRow.classList.add('gyro-controls-disabled');
+        ventoSliderRow.classList.add('gyro-controls-disabled');
+        
+        window.addEventListener('deviceorientation', handleOrientation, true);
+        window.addEventListener('devicemotion', handleMotion, true);
+    } else {
+        gyroBtn.classList.remove('active');
+        window.removeEventListener('deviceorientation', handleOrientation, true);
+        window.removeEventListener('devicemotion', handleMotion, true);
+        
+        gravidadeSliderRow.classList.remove('gyro-controls-disabled');
+        ventoSliderRow.classList.remove('gyro-controls-disabled');
+        settings.gravidade = preGyroSettings.gravidade;
+        settings.vento = preGyroSettings.vento;
+        syncUIToSettings();
+    }
+}
+
 async function toggleGyro() {
     if (typeof DeviceOrientationEvent.requestPermission === 'function') {
         const permission = await DeviceOrientationEvent.requestPermission();
