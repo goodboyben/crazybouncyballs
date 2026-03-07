@@ -1067,20 +1067,20 @@ function renderVisuals() {
     })
 }
 
-let lastScreenXTrack = window.screenX;
-let lastScreenYTrack = window.screenY;
-let lastWinWTrack = window.innerWidth;
-let lastWinHTrack = window.innerHeight;
+let lastScreenXTrack = window.screenX || 0;
+let lastScreenYTrack = window.screenY || 0;
+let lastWinWTrack = window.innerWidth || 0;
+let lastWinHTrack = window.innerHeight || 0;
 let lastTime = performance.now();
 
 function gameLoop() {
     if (!isPaused) {
         const now = performance.now();
         const dt = now - lastTime;
-        const curX = window.screenX;
-        const curY = window.screenY;
-        const curW = window.innerWidth;
-        const curH = window.innerHeight;
+        const curX = window.screenX || 0;
+        const curY = window.screenY || 0;
+        const curW = window.innerWidth || 0;
+        const curH = window.innerHeight || 0;
         
         const dx = curX - lastScreenXTrack;
         const dy = curY - lastScreenYTrack;
@@ -1221,16 +1221,17 @@ function init() {
     const vh = window.innerHeight * 0.01;
     document.documentElement.style.setProperty('--vh', `${vh}px`);
     
-    let lastWinW = window.innerWidth;
-    let lastWinH = window.innerHeight;
-    let lastWinScreenX = window.screenX;
-    let lastWinScreenY = window.screenY;
+    // The || 0 prevents NaN crashes on mobile devices.
+    let lastWinW = window.innerWidth || 0;
+    let lastWinH = window.innerHeight || 0;
+    let lastWinScreenX = window.screenX || 0;
+    let lastWinScreenY = window.screenY || 0;
 
- window.addEventListener('resize', () => {
-        const curW = window.innerWidth;
-        const curH = window.innerHeight;
-        const curScreenX = window.screenX;
-        const curScreenY = window.screenY;
+    window.addEventListener('resize', () => {
+        const curW = window.innerWidth || 0;
+        const curH = window.innerHeight || 0;
+        const curScreenX = window.screenX || 0;
+        const curScreenY = window.screenY || 0;
 
         const diffW = curW - lastWinW;
         const diffH = curH - lastWinH;
@@ -1241,47 +1242,36 @@ function init() {
             if (l.toBeDeleted || l === draggedBall) return;
             const t = getBallProperty(l, "tamanho") / 2;
 
-            // Globally anchor the balls so they maintain their physical monitor position.
+            // Globally anchor the balls both horizontally and vertically.
             l.x -= diffScreenX; 
             l.y += diffScreenY + diffH; 
 
-            // Only apply physical wall swatting if No Walls mode is OFF.
             if (!isNoWallsActive) {
                 // Swat from Right Wall
                 if (l.x + t >= curW) {
                     l.x = curW - t;
                     if (diffW < 0) l.velocidadeX -= Math.abs(diffW) * 0.5 + 5;
                 }
-                // Swat from Left Wall
+                // Swat from Left Wall (Triggered by dragging the left edge inward)
                 if (l.x - t <= 0) {
                     l.x = t;
                     if (diffScreenX > 0) l.velocidadeX += Math.abs(diffScreenX) * 0.5 + 5;
                 }
 
                 // Swat from Bottom Floor
-                if (l.y - t < 0) {
+                if (l.y - t <= 0) {
                     l.y = t;
                     const fDelta = diffScreenY + diffH;
                     if (fDelta < 0) l.velocidadeY += Math.abs(fDelta) * 0.5 + 5; 
                 } 
                 // Swat from Top Ceiling
-                else if (l.y + t > curH) {
+                else if (l.y + t >= curH) {
                     l.y = curH - t;
                     if (diffScreenY > 0) l.velocidadeY -= Math.abs(diffScreenY) * 0.5 + 5;
                 }
             }
         });
 
-        lastWinW = curW;
-        lastWinH = curH;
-        lastWinScreenX = curScreenX;
-        lastWinScreenY = curScreenY;
-
-        const vh = window.innerHeight * 0.01;
-        document.documentElement.style.setProperty('--vh', `${vh}px`);
-    });
-
-        // Update tracking variables for the next resize event
         lastWinW = curW;
         lastWinH = curH;
         lastWinScreenX = curScreenX;
