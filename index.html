@@ -864,11 +864,47 @@ function runPhysics() {
                 if (l.y > h) l.y -= h;
                 else if (l.y < 0) l.y += h;
             } else {
-                if (l.x + t > window.innerWidth) { o = l.velocidadeX; l.x = window.innerWidth - t; if (l.isLemon && Math.abs(o) > 40) explode = true; else { animationsEnabled && useAnimations && squishBall(l, o, 90); l.velocidadeX *= -e; if (Math.abs(o) > 4) playBounceSound(l, Math.abs(o) / 20); } }
-                else if (l.x - t < 0) { o = l.velocidadeX; l.x = t; if (l.isLemon && Math.abs(o) > 40) explode = true; else { animationsEnabled && useAnimations && squishBall(l, o, 90); l.velocidadeX *= -e; if (Math.abs(o) > 4) playBounceSound(l, Math.abs(o) / 20); } }
+                if (l.x + t > window.innerWidth) { 
+                    o = l.velocidadeX; 
+                    l.x = window.innerWidth - t; 
+                    if (l.isLemon && Math.abs(o) > 40) explode = true; 
+                    else { 
+                        animationsEnabled && useAnimations && squishBall(l, o, 90); 
+                        if (l.velocidadeX > 0) l.velocidadeX *= -e; 
+                        if (Math.abs(o) > 4) playBounceSound(l, Math.abs(o) / 20); 
+                    } 
+                }
+                else if (l.x - t < 0) { 
+                    o = l.velocidadeX; 
+                    l.x = t; 
+                    if (l.isLemon && Math.abs(o) > 40) explode = true; 
+                    else { 
+                        animationsEnabled && useAnimations && squishBall(l, o, 90); 
+                        if (l.velocidadeX < 0) l.velocidadeX *= -e; 
+                        if (Math.abs(o) > 4) playBounceSound(l, Math.abs(o) / 20); 
+                    } 
+                }
 
-                if (l.y + t > window.innerHeight) { o = l.velocidadeY; l.y = window.innerHeight - t; if (l.isLemon && Math.abs(o) > 40) explode = true; else { animationsEnabled && useAnimations && squishBall(l, o, 0); l.velocidadeY *= -e; if (Math.abs(o) > 4) playBounceSound(l, Math.abs(o) / 20); } }
-                else if (l.y - t < 0) { o = l.velocidadeY; l.y = t; if (l.isLemon && Math.abs(o) > 40) explode = true; else { animationsEnabled && useAnimations && squishBall(l, o, 0), l.velocidadeY *= -e; if (Math.abs(o) > 4) playBounceSound(l, Math.abs(o) / 20); } }
+                if (l.y + t > window.innerHeight) { 
+                    o = l.velocidadeY; 
+                    l.y = window.innerHeight - t; 
+                    if (l.isLemon && Math.abs(o) > 40) explode = true; 
+                    else { 
+                        animationsEnabled && useAnimations && squishBall(l, o, 0); 
+                        if (l.velocidadeY > 0) l.velocidadeY *= -e; 
+                        if (Math.abs(o) > 4) playBounceSound(l, Math.abs(o) / 20); 
+                    } 
+                }
+                else if (l.y - t < 0) { 
+                    o = l.velocidadeY; 
+                    l.y = t; 
+                    if (l.isLemon && Math.abs(o) > 40) explode = true; 
+                    else { 
+                        animationsEnabled && useAnimations && squishBall(l, o, 0); 
+                        if (l.velocidadeY < 0) l.velocidadeY *= -e; 
+                        if (Math.abs(o) > 4) playBounceSound(l, Math.abs(o) / 20); 
+                    } 
+                }
             }
 
             if (explode && !l.toBeDeleted) {
@@ -1184,12 +1220,8 @@ function syncUIToSettings() {
 function init() {
     const vh = window.innerHeight * 0.01;
     document.documentElement.style.setProperty('--vh', `${vh}px`);
+    
     let lastWinW = window.innerWidth;
-    let lastWinH = window.innerHeight;
-    let lastWinScreenX = window.screenX;
-    let lastWinScreenY = window.screenY;
-
-   let lastWinW = window.innerWidth;
     let lastWinH = window.innerHeight;
     let lastWinScreenX = window.screenX;
     let lastWinScreenY = window.screenY;
@@ -1238,15 +1270,6 @@ function init() {
                 }
             }
         });
-
-        lastWinW = curW;
-        lastWinH = curH;
-        lastWinScreenX = curScreenX;
-        lastWinScreenY = curScreenY;
-
-        const vh = window.innerHeight * 0.01;
-        document.documentElement.style.setProperty('--vh', `${vh}px`);
-    });
 
         lastWinW = curW;
         lastWinH = curH;
