@@ -459,13 +459,6 @@ function playBounceSound(ball, volume = 1) {
     }
 }
 
-function playExplodeSound() {
-    if (!soundEnabled || !explodeSoundReady) return;
-    const audio = new Audio('explode.mp3');
-    audio.volume = 1.0;
-    audio.play();
-}
-
 function initAudioContext() {
     if (soundsUnlocked) return;
     soundsUnlocked = true;
