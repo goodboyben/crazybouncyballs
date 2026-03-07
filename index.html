@@ -1031,54 +1031,31 @@ function renderVisuals() {
     })
 }
 
-let lastScreenX = window.screenX;
-let lastScreenY = window.screenY;
-let lastWinWidth = window.innerWidth;
-let lastWinHeight = window.innerHeight;
+let lastScreenXTrack = window.screenX;
+let lastScreenYTrack = window.screenY;
+let lastTime = performance.now();
 
 function gameLoop() {
     if (!isPaused) {
-        // --- WINDOW SHAKE & RESIZE PHYSICS ---
-        const currentScreenX = window.screenX;
-        const currentScreenY = window.screenY;
-        const currentWinWidth = window.innerWidth;
-        const currentWinHeight = window.innerHeight;
+        const now = performance.now();
+        const dt = now - lastTime;
+        const curX = window.screenX;
+        const curY = window.screenY;
+        const dx = curX - lastScreenXTrack;
+        const dy = curY - lastScreenYTrack;
 
-        const screenDeltaX = currentScreenX - lastScreenX;
-        const screenDeltaY = currentScreenY - lastScreenY;
-        const resizeDeltaX = currentWinWidth - lastWinWidth;
-        const resizeDeltaY = currentWinHeight - lastWinHeight;
-
-        if (screenDeltaX !== 0 || screenDeltaY !== 0 || resizeDeltaX !== 0 || resizeDeltaY !== 0) {
+        // Apply drag momentum smoothly, but completely block massive jumps caused by OS pausing or fullscreen toggling.
+        if (dt < 100 && (dx !== 0 || dy !== 0)) {
             bolas.forEach(l => {
                 if (l.toBeDeleted || l === draggedBall) return;
-                
-                // 1. Momentum from physically dragging and shaking the window
-                if (screenDeltaX !== 0) l.velocidadeX -= screenDeltaX * 0.8;
-                
-                // The engine's Y-axis is inverted (0 is the floor). 
-                // Moving the window down (positive screenDeltaY) pushes the balls up.
-                if (screenDeltaY !== 0) l.velocidadeY += screenDeltaY * 0.8; 
-
-                // 2. Momentum from crushing the window boundaries inward (Resizing)
-                const t = getBallProperty(l, "tamanho") / 2;
-                
-                // If the right wall moves left, push balls that are touching it
-                if (resizeDeltaX < 0 && l.x + t >= currentWinWidth - 10) {
-                    l.velocidadeX += resizeDeltaX * 0.8;
-                }
-                // If the ceiling crushes down, push balls that are touching it
-                if (resizeDeltaY < 0 && l.y + t >= currentWinHeight - 10) {
-                    l.velocidadeY += resizeDeltaY * 0.8;
-                }
+                l.velocidadeX -= Math.max(-30, Math.min(30, dx * 0.5));
+                l.velocidadeY += Math.max(-30, Math.min(30, dy * 0.5));
             });
         }
 
-        lastScreenX = currentScreenX;
-        lastScreenY = currentScreenY;
-        lastWinWidth = currentWinWidth;
-        lastWinHeight = currentWinHeight;
-        // -------------------------------------
+        lastScreenXTrack = curX;
+        lastScreenYTrack = curY;
+        lastTime = now;
 
         runPhysics();
         updateParticles();
@@ -1198,7 +1175,57 @@ function syncUIToSettings() {
 function init() {
     const vh = window.innerHeight * 0.01;
     document.documentElement.style.setProperty('--vh', `${vh}px`);
+    let lastWinW = window.innerWidth;
+    let lastWinH = window.innerHeight;
+    let lastWinScreenX = window.screenX;
+    let lastWinScreenY = window.screenY;
+
     window.addEventListener('resize', () => {
+        const curW = window.innerWidth;
+        const curH = window.innerHeight;
+        const curScreenX = window.screenX;
+        const curScreenY = window.screenY;
+
+        const diffW = curW - lastWinW;
+        const diffH = curH - lastWinH;
+        const diffScreenX = curScreenX - lastWinScreenX;
+        const diffScreenY = curScreenY - lastWinScreenY;
+
+        bolas.forEach(l => {
+            if (l.toBeDeleted || l === draggedBall) return;
+            const t = getBallProperty(l, "tamanho") / 2;
+
+            // 1. Globally anchor balls to the physical monitor so the floor "drops away".
+            l.x = l.x - diffScreenX;
+            l.y = l.y + diffScreenY + diffH; 
+
+            const maxF = 50; // Cap to prevent extreme forces
+
+            // 2. Swat balls inward immediately if boundaries crush them.
+            if (l.x - t < 0) {
+                l.x = t;
+                if (diffScreenX > 0) l.velocidadeX += Math.min(diffScreenX * 0.5, maxF);
+            } else if (l.x + t > curW) {
+                l.x = curW - t;
+                const rDelta = diffScreenX + diffW;
+                if (rDelta < 0) l.velocidadeX += Math.max(rDelta * 0.5, -maxF);
+            }
+
+            if (l.y - t < 0) {
+                l.y = t;
+                const fDelta = diffScreenY + diffH;
+                if (fDelta < 0) l.velocidadeY += Math.min(-fDelta * 0.5, maxF); 
+            } else if (l.y + t > curH) {
+                l.y = curH - t;
+                if (diffScreenY > 0) l.velocidadeY -= Math.min(diffScreenY * 0.5, maxF);
+            }
+        });
+
+        lastWinW = curW;
+        lastWinH = curH;
+        lastWinScreenX = curScreenX;
+        lastWinScreenY = curScreenY;
+
         const vh = window.innerHeight * 0.01;
         document.documentElement.style.setProperty('--vh', `${vh}px`);
     });
