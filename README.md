@@ -1,4 +1,5 @@
-# 🟢 Bouncy Ball Simulator
+# <img width="48" height="48" alt="transparent_output (1)" src="https://github.com/user-attachments/assets/1805d321-55dd-44d6-a4b2-79648dd1361e" /> Bouncy Ball Simulator
+
 
 A web-based physics sandbox that simulates elastic collisions and environmental forces. This project renders interactive objects directly in the DOM, allowing for real-time manipulation of physical properties and visual styles through a built-in editor.
 
